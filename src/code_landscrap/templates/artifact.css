@@ -25,7 +25,6 @@
         radial-gradient(circle at 16% -10%, rgba(248, 241, 229, 0.9), transparent 40%),
         radial-gradient(circle at 92% 10%, rgba(211, 194, 168, 0.35), transparent 44%),
         linear-gradient(168deg, #ede5d9 0%, #dfd0bc 48%, #d3c1a6 100%);
-      filter: saturate(var(--sat));
       min-height: 100vh;
     }
     body::before {
@@ -42,6 +41,15 @@
         radial-gradient(circle at 28% 40%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
       mix-blend-mode: multiply;
       opacity: calc(0.42 - (var(--erosion) * 0.16));
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.001);
+      backdrop-filter: saturate(var(--sat));
+      z-index: 40;
     }
     .temporal-field {
       width: min(1080px, 100%);

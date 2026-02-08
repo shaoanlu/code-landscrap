@@ -32,7 +32,6 @@
         radial-gradient(circle at 16% -10%, rgba(248, 241, 229, 0.9), transparent 40%),
         radial-gradient(circle at 92% 10%, rgba(211, 194, 168, 0.35), transparent 44%),
         linear-gradient(168deg, #ede5d9 0%, #dfd0bc 48%, #d3c1a6 100%);
-      filter: saturate(var(--sat));
       min-height: 100vh;
     }
     body::before {
@@ -49,6 +48,15 @@
         radial-gradient(circle at 28% 40%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
       mix-blend-mode: multiply;
       opacity: calc(0.42 - (var(--erosion) * 0.16));
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.001);
+      backdrop-filter: saturate(var(--sat));
+      z-index: 40;
     }
     .temporal-field {
       width: min(1080px, 100%);
@@ -343,6 +351,83 @@
 	      }
 	    }
 
+
+    /* Floating "Material Drift" panel (bottom-right, always visible). */
+    .material-drift-panel {
+      position: fixed;
+      right: 1.1rem;
+      bottom: 1.1rem;
+      width: min(340px, calc(100vw - 2.2rem));
+      max-height: min(420px, calc(100vh - 2.2rem));
+      overflow: auto;
+      overscroll-behavior: contain;
+      z-index: 30;
+      margin: 0;
+      transform: none;
+      box-shadow: 0 14px 40px rgba(27, 21, 16, 0.18);
+    }
+    .material-drift-panel summary {
+      list-style: none;
+    }
+    .material-drift-panel summary::marker {
+      content: "";
+    }
+    .material-drift-panel summary::-webkit-details-marker {
+      display: none;
+    }
+    .material-drift-summary {
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.85rem;
+      outline: none;
+    }
+    .material-drift-summary:focus-visible {
+      outline: 2px solid rgba(86, 66, 43, 0.42);
+      outline-offset: 3px;
+      border-radius: 0.35rem;
+    }
+    .material-drift-summary::after {
+      content: "▾";
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.2;
+      margin-top: 0.1rem;
+    }
+    .material-drift-panel:not([open]) .material-drift-summary::after {
+      content: "▸";
+    }
+    .material-drift-headline {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      min-width: 0;
+    }
+    .material-drift-summary .kicker {
+      margin: 0;
+      display: block;
+    }
+    .material-drift-title {
+      font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+      letter-spacing: 0.015em;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .material-drift-body {
+      margin-top: 0.4rem;
+    }
+    .material-drift-panel .muted {
+      font-size: 0.82rem;
+    }
+    @media (max-width: 760px) {
+      .material-drift-panel {
+        right: 0.72rem;
+        bottom: 0.72rem;
+        width: calc(100vw - 1.44rem);
+        max-height: 40vh;
+      }
+    }
   </style>
 </head>
 <body>
@@ -630,16 +715,21 @@ def cycle_of_becoming():
       </div>
     </section>
 
-    <section class="stratum">
-      <p class="kicker">local irreversible clocks</p>
-      <h2>Material Drift</h2>
-      <p class="clock-row">elapsed with this artifact: <code data-clock="elapsed">0m 0s</code></p>
-      <p class="clock-row">resistance now: <code data-clock="relief">0%</code></p>
-      <p class="clock-row">pointer contacts: <code data-clock="clicks">0</code></p>
-      <p class="clock-row">scroll intensity: <code data-clock="scroll">0</code></p>
-      <p class="clock-row">mouse travel: <code data-clock="move">0 px</code></p>
-      <p class="muted">Time erodes fragments; clicks, scroll, and motion slow the erosion. The browser remembers gestures, not reloads.</p>
-    </section>
+    <details class="stratum material-drift-panel" open>
+      <summary class="material-drift-summary">
+        <span class="material-drift-headline">
+          <span class="material-drift-title">Material Drift</span>
+        </span>
+      </summary>
+      <div class="material-drift-body" aria-label="Material Drift">
+        <p class="clock-row">elapsed with this artifact: <code data-clock="elapsed">0m 0s</code></p>
+        <p class="clock-row">resistance now: <code data-clock="relief">0%</code></p>
+        <p class="clock-row">pointer contacts: <code data-clock="clicks">0</code></p>
+        <p class="clock-row">scroll intensity: <code data-clock="scroll">0</code></p>
+        <p class="clock-row">mouse travel: <code data-clock="move">0 px</code></p>
+        <p class="muted">Time erodes fragments; clicks, scroll, and motion slow the erosion. The browser remembers gestures, not reloads.</p>
+      </div>
+    </details>
 
     <aside class="residue-layer" aria-hidden="true"></aside>
   </main>
