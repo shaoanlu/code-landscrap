@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Actor-Sharer-Learner Ritual</title>
+  <style>
+    :root {
+      --paper: #efe8dd;
+      --dust: #d8ccb9;
+      --ink: #1b1510;
+      --muted: #6f6254;
+      --line: rgba(67, 54, 38, 0.25);
+      --erosion: 0;
+      --scroll-y: 0;
+      --fast-wave: 0;
+      --sat: calc(1 - (var(--erosion) * 0.45));
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      color: var(--ink);
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 16% -10%, rgba(248, 241, 229, 0.9), transparent 40%),
+        radial-gradient(circle at 92% 10%, rgba(211, 194, 168, 0.35), transparent 44%),
+        linear-gradient(168deg, #ede5d9 0%, #dfd0bc 48%, #d3c1a6 100%);
+      filter: saturate(var(--sat));
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          -6deg,
+          rgba(73, 58, 38, 0.015) 0 2px,
+          rgba(255, 255, 255, 0) 2px 5px
+        ),
+        radial-gradient(circle at 28% 40%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+      mix-blend-mode: multiply;
+      opacity: calc(0.42 - (var(--erosion) * 0.16));
+    }
+    .temporal-field {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+      padding: 2rem 1rem 5rem;
+      position: relative;
+    }
+    .stratum {
+      position: relative;
+      margin: 0 0 1.6rem;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.46);
+      backdrop-filter: blur(2px);
+      padding: 1rem 1.15rem;
+      transform: translateY(calc(var(--scroll-y) * -0.006px));
+      transition:
+        opacity 1000ms cubic-bezier(0.16, 0.06, 0.09, 0.99),
+        border-color 1500ms cubic-bezier(0.16, 0.06, 0.09, 0.99);
+    }
+    .stratum::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.22), transparent 38%);
+      opacity: calc(0.3 + (var(--fast-wave) * 0.08));
+    }
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 0.55rem;
+      letter-spacing: 0.015em;
+      font-weight: 500;
+    }
+    h1 {
+      font-size: clamp(1.55rem, 3.8vw, 2.3rem);
+    }
+    h2 {
+      font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+    }
+    .meta,
+    .time-note,
+    .fragment-meta {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .kicker {
+      margin: 0 0 0.35rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+      font-size: 0.73rem;
+    }
+    code,
+    pre {
+      font-family: "IBM Plex Mono", "Courier New", Courier, monospace;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+    .artifact-code {
+      padding: 0.75rem;
+      border: 1px dashed rgba(84, 67, 46, 0.35);
+      background: rgba(252, 250, 245, 0.62);
+      max-height: 48vh;
+      overflow: auto;
+    }
+    .duration-gated {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    body.js-temporal .duration-gated {
+      opacity: 0;
+      transform: translateY(8px);
+      transition:
+        opacity 1700ms cubic-bezier(0.09, 0.17, 0.06, 1),
+        transform 1700ms cubic-bezier(0.09, 0.17, 0.06, 1);
+    }
+    body.js-temporal .duration-gated.is-revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .fragment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 0.7rem;
+    }
+    .fragment {
+      position: relative;
+      border: 1px solid rgba(78, 64, 44, 0.3);
+      background: rgba(255, 255, 255, 0.45);
+      padding: 0.65rem;
+      min-height: 10rem;
+      transition:
+        opacity 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99),
+        filter 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99);
+    }
+    .fragment.is-erased {
+      opacity: 0.18;
+      filter: blur(0.8px) grayscale(0.85);
+      pointer-events: none;
+    }
+    .fragment-head {
+      margin-bottom: 0.45rem;
+    }
+    .fragment h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.18rem;
+    }
+    .fragment-meta {
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .relative-marker {
+      font-style: italic;
+    }
+    .fragment-echo {
+      margin-top: 0.4rem;
+      padding-top: 0.4rem;
+      border-top: 1px dashed rgba(86, 66, 43, 0.28);
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition:
+        opacity 1400ms cubic-bezier(0.16, 0.06, 0.09, 0.99),
+        max-height 1400ms cubic-bezier(0.16, 0.06, 0.09, 0.99);
+    }
+    .fragment-echo p {
+      margin: 0 0 0.35rem;
+      color: var(--muted);
+      font-size: 0.77rem;
+    }
+    .fragment.is-active .fragment-echo,
+    .fragment:focus-within .fragment-echo {
+      opacity: 1;
+      max-height: 20rem;
+    }
+    .drift {
+      transform: translateY(calc(var(--scroll-y) * var(--drift-rate, 0.02) * -0.02px));
+    }
+    .residue-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 5;
+    }
+    .residue-dot {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(66, 53, 37, 0.21);
+      filter: blur(0.5px);
+    }
+    .clock-row {
+      margin: 0.2rem 0;
+    }
+    .clock-row code {
+      font-size: 0.94rem;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .minute-shift .stratum {
+      border-color: rgba(78, 64, 44, 0.38);
+    }
+    @media (max-width: 760px) {
+      .temporal-field {
+        padding: 1rem 0.72rem 4rem;
+      }
+      .stratum {
+        padding: 0.8rem 0.82rem;
+      }
+      .artifact-code {
+        max-height: 42vh;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .stratum,
+      .fragment,
+      .duration-gated,
+      .fragment-echo {
+        transition: none;
+      }
+      .drift {
+        transform: none;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <main class="temporal-field" data-artifact-id="d77eae0ecb27" data-fragment-total="20">
+    <section class="stratum resistance-zone" data-resistance="0.32">
+      <p class="kicker">artifact stratum</p>
+      <h1 class="drift" style="--drift-rate:0.14;">The Actor-Sharer-Learner Ritual</h1>
+      <p class="meta">artifact d77eae0ecb27 | model gemini-3-flash-preview (gemini) | created 2026-02-08T09:37:50.519877+00:00</p>
+      <pre class="artifact-code"><code>import torch
+
+class ReinforcementGhost:
+    def __init__(self):
+        self.actor = type('Model', (), {'load_state_dict': lambda self, x: None})()
+        self.protocol = &quot;Actor-Sharer-Learner&quot;
+
+    def invoke_archival_state(self, EnvName, timestep):
+        # Fragment 1: Loading the memory of a discarded epoch
+        self.actor.load_state_dict(torch.load(&quot;./model/{}_actor{}.pth&quot;.format(EnvName, timestep)))
+
+    def achieve_entropy(self):
+        # Fragment 19: Searching for maximum entropy deep reinforcement learning
+        threshold = &quot;maximum entropy&quot;
+        # Fragment 14: Seeking Human-level control
+        target = &quot;Human-level control through deep reinforcement learning&quot;
+        return f&quot;{target} via {threshold}&quot;
+
+# Run the main.py to train from scratch:
+def cycle_of_becoming():
+    ghost = ReinforcementGhost()
+    
+    # Fragment 10: Defining the Classic Control boundaries
+    environment = &quot;DQN/DDQN on Classic Control&quot;
+    
+    # Fragment 8: Accelerating through the Fast Vectorized Env
+    acceleration = &quot;Fast Vectorized Env&quot;
+    
+    # Fragment 9: The catalog of completed evolutions
+    history = [&quot;Q-learning&quot;, &quot;DQN&quot;, &quot;DDQN&quot;, &quot;SAC-Continuous&quot;, &quot;Actor-Sharer-Learner&quot;]
+    
+    print(f&quot;Initiating {ghost.protocol} on {environment} using {acceleration}&quot;)
+    ghost.invoke_archival_state(&quot;SAC-Continuous&quot;, &quot;scratch&quot;)
+    return ghost.achieve_entropy()</code></pre>
+    </section>
+
+    <section class="stratum resistance-zone" data-resistance="0.18">
+      <p class="kicker">duration reveals</p>
+      <p class="duration-gated" data-reveal-after="5">This piece reimagines the Deep Reinforcement Learning pipeline not as a mathematical optimization, but as a recursive ritual of 'becoming.' By treating bibliographical citations and technical fragments as tangible model weights, the code attempts to bridge the gap between human research documentation and machine execution. The 'Actor-Sharer-Learner' triad, originally a parallel computing architecture, is transformed here into a trinity of conceptual existence. The 'Maximum Entropy' described in the Soft Actor Critic fragments is repurposed as a creative threshold, where the system oscillates between the rigidity of archival code and the surreal aspiration of reaching 'Human-level control.' The resulting artifact acts as a digital ghost, eternally loading its own discarded history to train for a future that has already been recorded in a README file.</p>
+      <p class="duration-gated time-note" data-reveal-after="5">I combined the functional Pytorch loading logic with the descriptive metadata found in the project's documentation. The transformation process involved elevating markdown list items (like 'Classic Control' and 'Fast Vectorized Env') into operational constants within a Python class structure. The preservation of the 'Actor-Sharer-Learner' (ASL) token served as the structural backbone, turning a distributed training strategy into a conceptual protocol. Traceable lineage is maintained through exact token matches including 'self.actor.load_state_dict', 'maximum entropy', and 'Human-level control'.</p>
+    </section>
+
+    <section class="stratum resistance-zone" data-resistance="0.1">
+      <p class="kicker">communal residue</p>
+      <h2>Fragments</h2>
+      <div class="fragment-grid">
+        <article class="fragment drift" data-drift="0.018" data-fragment-index="0">
+<header class="fragment-head">
+<h3>5.2 SAC-Continuous/SAC.py	:91</h3>
+<p class="fragment-meta"><code>75892e8c5264</code> <span class="relative-marker">earlier</span></p>
+</header>
+<pre><code>		self.actor.load_state_dict(torch.load(&quot;./model/{}_actor{}.pth&quot;.format(EnvName, timestep)))</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>		self.actor.load_state_dict(torch.load(&quot;./model/{}_actor{}.pth&quot;.format(EnvName, timestep)))</code></pre>
+<pre><code>DQN: [Mnih V, Kavukcuoglu K, Silver D, et al. Human-level control through deep reinforcement learning[J]. nature, 2015, 518(7540): 529-533.](https://www.nature.com/articles/nature14236/?source=post_page---------------------------)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.027" data-fragment-index="1">
+<header class="fragment-head">
+<h3>README.md:116</h3>
+<p class="fragment-meta"><code>13d12da7acad</code> <span class="relative-marker">later</span></p>
+</header>
+<pre><code>DQN: [Mnih V, Kavukcuoglu K, Silver D, et al. Human-level control through deep reinforcement learning[J]. nature, 2015, 518(7540): 529-533.](https://www.nature.com/articles/nature14236/?source=post_page---------------------------)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>		self.actor.load_state_dict(torch.load(&quot;./model/{}_actor{}.pth&quot;.format(EnvName, timestep)))</code></pre>
+<pre><code>### [DQN/DDQN:](https://github.com/XinJingHao/DQN-DDQN-Pytorch)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.036" data-fragment-index="2">
+<header class="fragment-head">
+<h3>README.md:140</h3>
+<p class="fragment-meta"><code>438cb7984158</code> <span class="relative-marker">not yet</span></p>
+</header>
+<pre><code>### [DQN/DDQN:](https://github.com/XinJingHao/DQN-DDQN-Pytorch)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>DQN: [Mnih V, Kavukcuoglu K, Silver D, et al. Human-level control through deep reinforcement learning[J]. nature, 2015, 518(7540): 529-533.](https://www.nature.com/articles/nature14236/?source=post_page---------------------------)</code></pre>
+<pre><code>&lt;img src=&quot;https://github.com/XinJingHao/DQN-DDQN-Pytorch/blob/main/IMGs/DQN_DDQN_result.png&quot; width=700&gt;</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.045" data-fragment-index="3">
+<header class="fragment-head">
+<h3>README.md:141</h3>
+<p class="fragment-meta"><code>438cb7984158</code> <span class="relative-marker">earlier</span></p>
+</header>
+<pre><code>&lt;img src=&quot;https://github.com/XinJingHao/DQN-DDQN-Pytorch/blob/main/IMGs/DQN_DDQN_result.png&quot; width=700&gt;</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>### [DQN/DDQN:](https://github.com/XinJingHao/DQN-DDQN-Pytorch)</code></pre>
+<pre><code>### [DQN/DDQN on Classic Control:](https://github.com/XinJingHao/DQN-DDQN-Pytorch)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.054" data-fragment-index="4">
+<header class="fragment-head">
+<h3>README.md:137</h3>
+<p class="fragment-meta"><code>a6f83cf728e9</code> <span class="relative-marker">later</span></p>
+</header>
+<pre><code>### [DQN/DDQN on Classic Control:](https://github.com/XinJingHao/DQN-DDQN-Pytorch)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>&lt;img src=&quot;https://github.com/XinJingHao/DQN-DDQN-Pytorch/blob/main/IMGs/DQN_DDQN_result.png&quot; width=700&gt;</code></pre>
+<pre><code>```bash</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.018" data-fragment-index="5">
+<header class="fragment-head">
+<h3>README.md:32</h3>
+<p class="fragment-meta"><code>b0e852ee0961</code> <span class="relative-marker">not yet</span></p>
+</header>
+<pre><code>```bash</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>### [DQN/DDQN on Classic Control:](https://github.com/XinJingHao/DQN-DDQN-Pytorch)</code></pre>
+<pre><code>Run the **main.py** to train from scratch:</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.027" data-fragment-index="6">
+<header class="fragment-head">
+<h3>README.md:36</h3>
+<p class="fragment-meta"><code>b0e852ee0961</code> <span class="relative-marker">earlier</span></p>
+</header>
+<pre><code>Run the **main.py** to train from scratch:</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>```bash</code></pre>
+<pre><code>![Pytorch](https://img.shields.io/badge/Pytorch-ff69b4)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.036" data-fragment-index="7">
+<header class="fragment-head">
+<h3>README.md:26</h3>
+<p class="fragment-meta"><code>c0c18e518b0c</code> <span class="relative-marker">later</span></p>
+</header>
+<pre><code>![Pytorch](https://img.shields.io/badge/Pytorch-ff69b4)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>Run the **main.py** to train from scratch:</code></pre>
+<pre><code>![DRL](https://img.shields.io/badge/DRL-blueviolet)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.045" data-fragment-index="8">
+<header class="fragment-head">
+<h3>README.md:27</h3>
+<p class="fragment-meta"><code>c0c18e518b0c</code> <span class="relative-marker">not yet</span></p>
+</header>
+<pre><code>![DRL](https://img.shields.io/badge/DRL-blueviolet)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>![Pytorch](https://img.shields.io/badge/Pytorch-ff69b4)</code></pre>
+<pre><code>## 3. Important Papers</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.054" data-fragment-index="9">
+<header class="fragment-head">
+<h3>README.md:89</h3>
+<p class="fragment-meta"><code>c0c18e518b0c</code> <span class="relative-marker">earlier</span></p>
+</header>
+<pre><code>## 3. Important Papers</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>![DRL](https://img.shields.io/badge/DRL-blueviolet)</code></pre>
+<pre><code>+ [Soft Actor Critic](https://zhuanlan.zhihu.com/p/566722896)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.018" data-fragment-index="10">
+<header class="fragment-head">
+<h3>README.md:49</h3>
+<p class="fragment-meta"><code>ae99f27acd6e</code> <span class="relative-marker">later</span></p>
+</header>
+<pre><code>+ [Soft Actor Critic](https://zhuanlan.zhihu.com/p/566722896)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>## 3. Important Papers</code></pre>
+<pre><code>+ [Introduction to TD3](https://zhuanlan.zhihu.com/p/409536699)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.027" data-fragment-index="11">
+<header class="fragment-head">
+<h3>README.md:51</h3>
+<p class="fragment-meta"><code>ae99f27acd6e</code> <span class="relative-marker">not yet</span></p>
+</header>
+<pre><code>+ [Introduction to TD3](https://zhuanlan.zhihu.com/p/409536699)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>+ [Soft Actor Critic](https://zhuanlan.zhihu.com/p/566722896)</code></pre>
+<pre><code>### Online Courses:</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.036" data-fragment-index="12">
+<header class="fragment-head">
+<h3>README.md:36</h3>
+<p class="fragment-meta"><code>93a18be96f46</code> <span class="relative-marker">earlier</span></p>
+</header>
+<pre><code>### Online Courses:</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>+ [Introduction to TD3](https://zhuanlan.zhihu.com/p/409536699)</code></pre>
+<pre><code>&lt;div align=&quot;center&quot;&gt;</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.045" data-fragment-index="13">
+<header class="fragment-head">
+<h3>README.md:65</h3>
+<p class="fragment-meta"><code>93a18be96f46</code> <span class="relative-marker">later</span></p>
+</header>
+<pre><code>&lt;div align=&quot;center&quot;&gt;</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>### Online Courses:</code></pre>
+<pre><code>+ [Envpool](https://envpool.readthedocs.io/en/latest/index.html) (Fast Vectorized Env)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.054" data-fragment-index="14">
+<header class="fragment-head">
+<h3>README.md:58</h3>
+<p class="fragment-meta"><code>8d0f8450b911</code> <span class="relative-marker">not yet</span></p>
+</header>
+<pre><code>+ [Envpool](https://envpool.readthedocs.io/en/latest/index.html) (Fast Vectorized Env)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>&lt;div align=&quot;center&quot;&gt;</code></pre>
+<pre><code>+ [DQN/DDQN on Atari Game:](https://github.com/XinJingHao/DQN-DDQN-Atari-Pytorch)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.018" data-fragment-index="15">
+<header class="fragment-head">
+<h3>README.md:15</h3>
+<p class="fragment-meta"><code>4766375bd60c</code> <span class="relative-marker">earlier</span></p>
+</header>
+<pre><code>+ [DQN/DDQN on Atari Game:](https://github.com/XinJingHao/DQN-DDQN-Atari-Pytorch)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>+ [Envpool](https://envpool.readthedocs.io/en/latest/index.html) (Fast Vectorized Env)</code></pre>
+<pre><code>+ [Webots](https://cyberbotics.com/)</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.027" data-fragment-index="16">
+<header class="fragment-head">
+<h3>README.md:59</h3>
+<p class="fragment-meta"><code>d6e89e820966</code> <span class="relative-marker">later</span></p>
+</header>
+<pre><code>+ [Webots](https://cyberbotics.com/)</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>+ [DQN/DDQN on Atari Game:](https://github.com/XinJingHao/DQN-DDQN-Atari-Pytorch)</code></pre>
+<pre><code>+ 李宏毅：强化学习</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.036" data-fragment-index="17">
+<header class="fragment-head">
+<h3>README.md:32</h3>
+<p class="fragment-meta"><code>a9152f13675d</code> <span class="relative-marker">not yet</span></p>
+</header>
+<pre><code>+ 李宏毅：强化学习</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>+ [Webots](https://cyberbotics.com/)</code></pre>
+<pre><code>Haarnoja T, Zhou A, Abbeel P, et al. Soft actor-critic: Off-policy maximum entropy deep reinforcement learning with a stochastic actor[C]//International conference on machine learning. PMLR, 2018: 1861-1870.</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.045" data-fragment-index="18">
+<header class="fragment-head">
+<h3>README.md:104</h3>
+<p class="fragment-meta"><code>a9152f13675d</code> <span class="relative-marker">earlier</span></p>
+</header>
+<pre><code>Haarnoja T, Zhou A, Abbeel P, et al. Soft actor-critic: Off-policy maximum entropy deep reinforcement learning with a stochastic actor[C]//International conference on machine learning. PMLR, 2018: 1861-1870.</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>+ 李宏毅：强化学习</code></pre>
+<pre><code>Now I have finished **Q-learning, DQN, DDQN, PPO discrete, PPO continuous, TD3, SAC Continuous, SAC Discrete, and Actor-Sharer-Learner (ASL) **. I will implement more in the future.</code></pre>
+</div>
+</article><article class="fragment drift" data-drift="0.054" data-fragment-index="19">
+<header class="fragment-head">
+<h3>README.md:9</h3>
+<p class="fragment-meta"><code>dd740ce2df9f</code> <span class="relative-marker">later</span></p>
+</header>
+<pre><code>Now I have finished **Q-learning, DQN, DDQN, PPO discrete, PPO continuous, TD3, SAC Continuous, SAC Discrete, and Actor-Sharer-Learner (ASL) **. I will implement more in the future.</code></pre>
+<div class="fragment-echo" aria-hidden="true">
+<p>earlier/later traces</p>
+<pre><code>Haarnoja T, Zhou A, Abbeel P, et al. Soft actor-critic: Off-policy maximum entropy deep reinforcement learning with a stochastic actor[C]//International conference on machine learning. PMLR, 2018: 1861-1870.</code></pre>
+<pre><code>Now I have finished **Q-learning, DQN, DDQN, PPO discrete, PPO continuous, TD3, SAC Continuous, SAC Discrete, and Actor-Sharer-Learner (ASL) **. I will implement more in the future.</code></pre>
+</div>
+</article>
+      </div>
+    </section>
+
+    <section class="stratum">
+      <p class="kicker">local irreversible clocks</p>
+      <h2>Material Drift</h2>
+      <p class="clock-row">elapsed with this artifact: <code data-clock="elapsed">0m 0s</code></p>
+      <p class="clock-row">pointer contacts: <code data-clock="clicks">0</code></p>
+      <p class="clock-row">scroll intensity: <code data-clock="scroll">0</code></p>
+      <p class="clock-row">mouse travel: <code data-clock="move">0 px</code></p>
+      <p class="muted">This browser remembers by duration, clicks, scroll, and motion, not by page reload count.</p>
+    </section>
+
+    <aside class="residue-layer" aria-hidden="true"></aside>
+  </main>
+
+  <script>
+    (() => {
+      const AGGRESSION = {
+        elapsed_ms_to_max: 3 * 60 * 1000,
+        clicks_to_max: 120,
+        scroll_to_max: 9000,
+        move_px_to_max: 120000,
+      };
+
+      const field = document.querySelector(".temporal-field");
+      if (!field) {
+        return;
+      }
+      document.body.classList.add("js-temporal");
+
+      const artifactId = field.dataset.artifactId || "artifact";
+      const fragmentTotal = Number(field.dataset.fragmentTotal || "0");
+      const storageKey = `landscrap.temporal.${artifactId}`;
+      const nowMs = Date.now();
+      const memoryStore = {};
+      const storage = {
+        getItem(key) {
+          try {
+            return window.localStorage.getItem(key);
+          } catch (_err) {
+            return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+          }
+        },
+        setItem(key, value) {
+          try {
+            window.localStorage.setItem(key, value);
+          } catch (_err) {
+            memoryStore[key] = value;
+          }
+        },
+      };
+
+      const raw = storage.getItem(storageKey);
+      let parsed = {};
+      if (raw) {
+        try {
+          parsed = JSON.parse(raw);
+        } catch (_err) {
+          parsed = {};
+        }
+      }
+
+      const state = {
+        total_elapsed_ms: Number(parsed.total_elapsed_ms) || 0,
+        click_count: Number(parsed.click_count) || 0,
+        scroll_intensity: Number(parsed.scroll_intensity) || 0,
+        move_distance_px: Number(parsed.move_distance_px) || 0,
+        hidden_indices: Array.isArray(parsed.hidden_indices)
+          ? parsed.hidden_indices.filter((val) => Number.isInteger(val))
+          : [],
+        pointer_trace: Array.isArray(parsed.pointer_trace) ? parsed.pointer_trace.slice(-24) : [],
+        last_seen_ms: Number(parsed.last_seen_ms) || nowMs,
+      };
+
+      if (state.last_seen_ms > 0 && nowMs > state.last_seen_ms) {
+        const gap = Math.min(nowMs - state.last_seen_ms, 6 * 60 * 60 * 1000);
+        state.total_elapsed_ms += gap;
+      }
+
+      const root = document.documentElement;
+      const residueLayer = document.querySelector(".residue-layer");
+      const elapsedClock = document.querySelector('[data-clock="elapsed"]');
+      const clickClock = document.querySelector('[data-clock="clicks"]');
+      const scrollClock = document.querySelector('[data-clock="scroll"]');
+      const moveClock = document.querySelector('[data-clock="move"]');
+      const fragments = Array.from(document.querySelectorAll(".fragment"));
+      const durationTargets = Array.from(document.querySelectorAll(".duration-gated"));
+      const zones = Array.from(document.querySelectorAll(".resistance-zone"));
+      let sessionStartPerf = performance.now();
+      let persistTimer = 0;
+      let lastPointer = null;
+      let lastMoveCapture = 0;
+
+      function seededIndex(step, length) {
+        let hash = 2166136261;
+        const seedText = `${artifactId}:${step}`;
+        for (let i = 0; i < seedText.length; i += 1) {
+          hash ^= seedText.charCodeAt(i);
+          hash = Math.imul(hash, 16777619);
+        }
+        return Math.abs(hash) % Math.max(1, length);
+      }
+
+      function totalElapsedNow() {
+        return state.total_elapsed_ms + Math.max(0, performance.now() - sessionStartPerf);
+      }
+
+      function erosionScore(elapsedMs, clickCount) {
+        const fromElapsed = elapsedMs / AGGRESSION.elapsed_ms_to_max;
+        const fromClicks = clickCount / AGGRESSION.clicks_to_max;
+        const fromScroll = state.scroll_intensity / AGGRESSION.scroll_to_max;
+        const fromMoves = state.move_distance_px / AGGRESSION.move_px_to_max;
+        return Math.max(0, Math.min(1, fromElapsed + fromClicks + fromScroll + fromMoves));
+      }
+
+      function formatElapsed(ms) {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+      }
+
+      function formatPixels(px) {
+        if (px >= 1000) {
+          return `${(px / 1000).toFixed(1)}k px`;
+        }
+        return `${Math.floor(px)} px`;
+      }
+
+      function schedulePersist() {
+        if (persistTimer) {
+          return;
+        }
+        persistTimer = window.setTimeout(() => {
+          persistTimer = 0;
+          persistState();
+        }, 300);
+      }
+
+      function persistState() {
+        const payload = {
+          total_elapsed_ms: Math.round(totalElapsedNow()),
+          click_count: state.click_count,
+          scroll_intensity: Math.round(state.scroll_intensity),
+          move_distance_px: Math.round(state.move_distance_px),
+          hidden_indices: state.hidden_indices,
+          pointer_trace: state.pointer_trace.slice(-24),
+          last_seen_ms: Date.now(),
+        };
+        storage.setItem(storageKey, JSON.stringify(payload));
+      }
+
+      function applyFragmentDecay(score) {
+        const targetHidden = Math.floor(score * fragmentTotal * 0.25);
+        let step = state.hidden_indices.length;
+        while (state.hidden_indices.length < targetHidden && state.hidden_indices.length < fragmentTotal) {
+          const candidate = seededIndex(step * 37 + state.click_count, fragmentTotal);
+          if (!state.hidden_indices.includes(candidate)) {
+            state.hidden_indices.push(candidate);
+          }
+          step += 1;
+        }
+        fragments.forEach((frag) => {
+          const idx = Number(frag.getAttribute("data-fragment-index"));
+          const shouldHide = state.hidden_indices.includes(idx);
+          frag.classList.toggle("is-erased", shouldHide);
+        });
+      }
+
+      function renderPointerTrace() {
+        if (!residueLayer) {
+          return;
+        }
+        residueLayer.innerHTML = "";
+        state.pointer_trace.forEach((point, idx) => {
+          const dot = document.createElement("span");
+          dot.className = "residue-dot";
+          dot.style.left = `${Math.round(point.x * 100)}vw`;
+          dot.style.top = `${Math.round(point.y * 100)}vh`;
+          dot.style.opacity = `${Math.max(0.05, (idx + 2) / (state.pointer_trace.length * 5))}`;
+          residueLayer.appendChild(dot);
+        });
+      }
+
+      function applyAtmosphere() {
+        const elapsedMs = totalElapsedNow();
+        const score = erosionScore(elapsedMs, state.click_count);
+        root.style.setProperty("--erosion", score.toFixed(3));
+        root.style.setProperty("--scroll-y", String(window.scrollY));
+        if (elapsedClock) {
+          elapsedClock.textContent = formatElapsed(elapsedMs);
+        }
+        if (clickClock) {
+          clickClock.textContent = String(state.click_count);
+        }
+        if (scrollClock) {
+          scrollClock.textContent = String(Math.round(state.scroll_intensity));
+        }
+        if (moveClock) {
+          moveClock.textContent = formatPixels(state.move_distance_px);
+        }
+        applyFragmentDecay(score);
+      }
+
+      const revealState = new WeakMap();
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const nowPerf = performance.now();
+            entries.forEach((entry) => {
+              const current = revealState.get(entry.target) || { visible_ms: 0, entered_at: 0, visible: false };
+              if (entry.isIntersecting) {
+                if (!current.visible) {
+                  current.entered_at = nowPerf;
+                  current.visible = true;
+                }
+              } else if (current.visible) {
+                current.visible_ms += Math.max(0, nowPerf - current.entered_at);
+                current.entered_at = 0;
+                current.visible = false;
+              }
+              revealState.set(entry.target, current);
+            });
+          },
+          { threshold: 0.1 }
+        );
+        durationTargets.forEach((target) => observer.observe(target));
+      } else {
+        const startPerf = performance.now();
+        durationTargets.forEach((target) => {
+          revealState.set(target, { visible_ms: 0, entered_at: startPerf, visible: true });
+        });
+      }
+
+      function tickReveals(nowPerf) {
+        durationTargets.forEach((target) => {
+          if (target.classList.contains("is-revealed")) {
+            return;
+          }
+          const stateForTarget = revealState.get(target);
+          if (!stateForTarget) {
+            return;
+          }
+          const configured = Number(target.getAttribute("data-reveal-after")) || 5;
+          const afterSec = Math.min(30, configured);
+          const activeMs = stateForTarget.visible ? Math.max(0, nowPerf - stateForTarget.entered_at) : 0;
+          const totalVisibleMs = stateForTarget.visible_ms + activeMs;
+          if (totalVisibleMs >= afterSec * 1000) {
+            target.classList.add("is-revealed");
+          }
+        });
+      }
+
+      function applyScrollResistance(event) {
+        const centerY = window.innerHeight * 0.5;
+        const active = zones.find((zone) => {
+          const rect = zone.getBoundingClientRect();
+          return rect.top <= centerY && rect.bottom >= centerY;
+        });
+        if (!active) {
+          return;
+        }
+        const resistance = Number(active.getAttribute("data-resistance")) || 0;
+        if (resistance <= 0) {
+          return;
+        }
+        event.preventDefault();
+        window.scrollBy({ top: event.deltaY * (1 - resistance), behavior: "auto" });
+      }
+
+      fragments.forEach((frag) => {
+        const setActive = (active) => frag.classList.toggle("is-active", active);
+        frag.addEventListener("mouseenter", () => setActive(true));
+        frag.addEventListener("mouseleave", () => setActive(false));
+        frag.addEventListener("focusin", () => setActive(true));
+        frag.addEventListener("focusout", () => setActive(false));
+        frag.addEventListener("click", () => setActive(!frag.classList.contains("is-active")));
+
+        const driftRate = Number(frag.getAttribute("data-drift")) || 0.02;
+        frag.style.setProperty("--drift-rate", driftRate.toFixed(3));
+      });
+
+      document.addEventListener(
+        "wheel",
+        (event) => {
+          state.scroll_intensity += Math.abs(event.deltaY) + (Math.abs(event.deltaX) * 0.35);
+          applyScrollResistance(event);
+          applyAtmosphere();
+          schedulePersist();
+        },
+        { passive: false }
+      );
+
+      document.addEventListener("pointerdown", (event) => {
+        state.click_count += 1;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        const width = Math.max(1, window.innerWidth);
+        const height = Math.max(1, window.innerHeight);
+        state.pointer_trace.push({
+          x: Math.max(0, Math.min(1, event.clientX / width)),
+          y: Math.max(0, Math.min(1, event.clientY / height)),
+          t: Date.now(),
+        });
+        state.pointer_trace = state.pointer_trace.slice(-24);
+        renderPointerTrace();
+        applyAtmosphere();
+        schedulePersist();
+      });
+
+      document.addEventListener(
+        "pointermove",
+        (event) => {
+          if (event.pointerType && event.pointerType !== "mouse") {
+            return;
+          }
+          const nowPerf = performance.now();
+          if (nowPerf - lastMoveCapture < 32) {
+            return;
+          }
+          if (lastPointer) {
+            const dx = event.clientX - lastPointer.x;
+            const dy = event.clientY - lastPointer.y;
+            const dist = Math.sqrt((dx * dx) + (dy * dy));
+            state.move_distance_px += dist;
+          }
+          lastPointer = { x: event.clientX, y: event.clientY };
+          lastMoveCapture = nowPerf;
+          if (nowPerf % 250 < 32) {
+            applyAtmosphere();
+            schedulePersist();
+          }
+        },
+        { passive: true }
+      );
+
+      let minuteTimer = window.setInterval(() => {
+        document.body.classList.toggle("minute-shift");
+      }, 60000);
+
+      const onceKey = `landscrap.once.${artifactId}`;
+      if (!sessionStorage.getItem(onceKey)) {
+        sessionStorage.setItem(onceKey, "seen");
+        document.body.classList.add("minute-shift");
+      }
+
+      function animationLoop(nowPerf) {
+        root.style.setProperty("--fast-wave", String(Math.sin(nowPerf / 1400)));
+        tickReveals(nowPerf);
+        applyAtmosphere();
+        requestAnimationFrame(animationLoop);
+      }
+
+      function shutdown() {
+        window.clearInterval(minuteTimer);
+        persistState();
+      }
+
+      renderPointerTrace();
+      applyAtmosphere();
+      window.addEventListener("scroll", applyAtmosphere, { passive: true });
+      window.addEventListener("beforeunload", shutdown);
+      window.addEventListener("pagehide", shutdown);
+      field.addEventListener("mouseleave", schedulePersist);
+      requestAnimationFrame(animationLoop);
+    })();
+
+  </script>
+</body>
+</html>
