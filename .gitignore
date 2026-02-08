@@ -1,5 +1,8 @@
-.api*
-.code-lanscrap*
+# Project specific files
+.api*/*
+.code_landscrap/*
+artifacts/*
+*.db
 AGENTS.md
 
 # Byte-compiled / optimized / DLL files
