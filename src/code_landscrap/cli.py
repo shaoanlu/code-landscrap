@@ -192,7 +192,7 @@ def ingest(
 def generate(
     db_path: Path = typer.Option(DEFAULT_DB_PATH, "--db", help="SQLite database path"),
     repo_name: str | None = typer.Option(None, help="Optional repo filter"),
-    fragment_count: int = typer.Option(20, help="Fragments per piece"),
+    fragment_count: int = typer.Option(200, help="Fragments per piece"),
     entropy: float = typer.Option(0.55, min=0.0, max=1.0, help="0 archival -> 1 surreal"),
     seed: int | None = typer.Option(None, help="Random seed"),
     model_name: str = typer.Option("gemini-3-flash-preview", help="Gemini model name"),
@@ -238,7 +238,7 @@ def generate(
 def run(
     source: str = typer.Argument(..., help="Local git repo path or git URL"),
     db_path: Path = typer.Option(DEFAULT_DB_PATH, "--db", help="SQLite database path"),
-    max_commits: int = typer.Option(200, help="Max commits to inspect"),
+    max_commits: int = typer.Option(100, help="Max commits to inspect"),
     max_fragments_per_commit: int = typer.Option(80, help="Cap extracted fragments per commit"),
     repo_cache_dir: Path = typer.Option(
         DEFAULT_REPO_CACHE_DIR, "--repo-cache-dir", help="Cache directory for cloned remote repos"
@@ -247,7 +247,7 @@ def run(
         False, "--no-remote-update", help="Do not fetch/pull when using cached remote repos"
     ),
     repo_name: str | None = typer.Option(None, help="Optional repo filter at generation time"),
-    fragment_count: int = typer.Option(20, help="Fragments per piece"),
+    fragment_count: int = typer.Option(200, help="Fragments per piece"),
     entropy: float = typer.Option(0.55, min=0.0, max=1.0, help="0 archival -> 1 surreal"),
     seed: int | None = typer.Option(None, help="Random seed"),
     model_name: str = typer.Option("gemini-3-flash-preview", help="Gemini model name"),

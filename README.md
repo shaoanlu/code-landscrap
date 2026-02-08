@@ -37,7 +37,7 @@ Generate one artifact from a public GitHub repository (no database, local genera
 code-landscrap run https://github.com/owner/repo --no-db
 
 # Or alternatively, generate from a local repository with persisted history/artifacts:
-# code-landscrap run https://github.com/owner/repo --max-commits 300 --fragment-count 24 --entropy 0.62
+# code-landscrap run https://github.com/owner/repo --max-commits 300 --fragment-count 200 --entropy 0.62
 ```
 
 It produces:
@@ -72,7 +72,7 @@ code-landscrap ingest https://github.com/owner/repo.git --max-commits 300
 Generate one artifact from ingested fragments:
 
 ```bash
-code-landscrap generate --repo-name <repo-name> --fragment-count 20 --entropy 0.62
+code-landscrap generate --repo-name <repo-name> --fragment-count 200 --entropy 0.62
 ```
 
 Run full pipeline in one command (`ingest -> generate -> render`):
