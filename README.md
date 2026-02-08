@@ -1,6 +1,6 @@
 # code-landscrap
 
-Turn deleted Git history into traceable software-art artifacts.
+Turn Git history into traceable software-art artifacts.
 
 > Dead code is not dead; it is latent cultural memory.
 
@@ -16,8 +16,8 @@ Each run produces:
 - `artifact.json`: structured payload for tooling
 - `artifact.html`: styled presentation page
 
-## Installation
 
+## Installation
 Install in a virtual environment:
 
 ```bash
