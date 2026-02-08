@@ -37,7 +37,7 @@ Set your key:
 export GEMINI_API_KEY=your_api_key_here
 ```
 
-Fallback key file is supported at `.api_keys/Gemini.md`.
+Fallback is to find the key file at `.api_keys/Gemini.md` containing the API key.
 
 ## Quick Start
 
