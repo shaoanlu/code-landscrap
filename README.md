@@ -6,7 +6,7 @@ Turn deleted Git history into traceable software-art artifacts.
 
 `code-landscrap` retrieves removed or overwritten lines from a repository, recomposes them into a new code piece, and renders a package you can read, share, or archive.
 
-Visit page at [https://shaoanlu.github.io/code-landscrap](https://shaoanlu.github.io/code-landscrap), where the artifacts is generated from https://github.com/XinJingHao/DRL-Pytorch
+Visit the [demo page](https://shaoanlu.github.io/code-landscrap), where the artifacts is generated from [XinJingHao/DRL-Pytorch](https://github.com/XinJingHao/DRL-Pytorch).
 
 ## What you get
 
@@ -17,11 +17,6 @@ Each run produces:
 - `artifact.html`: styled presentation page
 
 ## Installation
-
-Requirements:
-
-- Python `>=3.10`
-- Git
 
 Install in a virtual environment:
 
