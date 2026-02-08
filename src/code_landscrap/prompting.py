@@ -5,9 +5,7 @@ from typing import Any
 
 
 def build_system_prompt() -> str:
-    return (
-    )
-"""
+    return ("""
 ## Core LLM Prompt
 
 **Role & Intent**
@@ -57,6 +55,7 @@ Your task is to **recompose** this material into a **new, coherent program or co
 Treat the source code as an artifact, not a mistake.
 
 """
+    )
 
 def build_user_prompt(fragments: list[dict[str, Any]], entropy: float, seed: int) -> str:
     lines: list[str] = []
