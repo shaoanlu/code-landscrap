@@ -8,15 +8,6 @@ Turn Git history into traceable software-art artifacts. Dead code is not dead; i
 
 Visit the [demo page](https://shaoanlu.github.io/code-landscrap), where the artifacts is generated from [XinJingHao/DRL-Pytorch](https://github.com/XinJingHao/DRL-Pytorch).
 
-## What you get
-
-Each run produces:
-
-- `artifact.md`: readable narrative + source fragments
-- `artifact.json`: structured payload for tooling
-- `artifact.html`: styled presentation page
-
-
 ## Installation
 Install in a virtual environment:
 
@@ -49,7 +40,13 @@ code-landscrap run https://github.com/owner/repo --no-db
 # code-landscrap run https://github.com/owner/repo --max-commits 300 --fragment-count 24 --entropy 0.62
 ```
 
-Output is written under `artifacts/<artifact_id>/`.
+It produces:
+
+- `artifact.md`: readable narrative + source fragments
+- `artifact.json`: structured payload for tooling
+- `artifact.html`: styled presentation page
+
+under `artifacts/<artifact_id>/`.
 
 
 ## CLI Commands
