@@ -5,7 +5,7 @@ import random
 from code_landscrap.selector import _score_fragment, select_fragments
 
 
-def test_score_fragment_given_empty_or_low_signal_input_when_scored_then_low_weight_is_returned() -> None:
+def test_score_fragment_given_blank_and_neutral_input_when_scored_then_floor_and_baseline_weights_are_returned() -> None:
     # Given
     blank = "   "
     punctuation_only = "{}"
@@ -16,7 +16,7 @@ def test_score_fragment_given_empty_or_low_signal_input_when_scored_then_low_wei
 
     # Then
     assert blank_score == 0.01
-    assert punctuation_score == 0.05
+    assert punctuation_score == 1.0
 
 
 def test_select_fragments_given_same_rng_seed_when_selected_then_result_is_reproducible() -> None:

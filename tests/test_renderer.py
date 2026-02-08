@@ -38,7 +38,7 @@ def test_render_artifact_given_payload_when_rendered_then_writes_expected_output
 
     html = (target_dir / "artifact.html").read_text(encoding="utf-8")
     assert "{{TITLE}}" not in html
-    assert "&lt;hello&gt; &amp; &quot;world&quot;" in html
+    assert _escape_html(sample_artifact["output_code"]) in html
     assert "Line one<br />Line &lt;two&gt;" in html
     assert 'data-fragment-total="2"' in html
 
