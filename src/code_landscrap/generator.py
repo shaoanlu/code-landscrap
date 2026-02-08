@@ -11,6 +11,21 @@ from pydantic import ValidationError
 
 from code_landscrap.models import ArtifactOutput
 
+DEFAULT_GEMINI_KEY_FILE = Path(".api_keys/Gemini.md")
+
+
+def resolve_gemini_api_key(key_file: Path = DEFAULT_GEMINI_KEY_FILE) -> str | None:
+    api_key = (os.getenv("GEMINI_API_KEY") or "").strip()
+    if api_key:
+        return api_key
+
+    if key_file.exists():
+        fallback_key = key_file.read_text(encoding="utf-8").strip()
+        if fallback_key:
+            return fallback_key
+
+    return None
+
 
 class GeminiGenerator:
     def __init__(self, model_name: str):
@@ -22,15 +37,9 @@ class GeminiGenerator:
         if not isinstance(user_prompt, str) or not user_prompt.strip():
             raise ValueError("User prompt must be a non-empty string.")
 
-        # api_key = os.getenv("GEMINI_API_KEY")
-        key_file = ".api_keys/Gemini.md"
-        path = Path(key_file)
-        if path.exists():
-            api_key = path.read_text(encoding="utf-8").strip()
-        else:
-            raise FileNotFoundError(key_file)
+        api_key = resolve_gemini_api_key()
         if not api_key:
-            raise RuntimeError("Missing GEMINI_API_KEY")
+            raise RuntimeError("Missing GEMINI_API_KEY (set env var or .api_keys/Gemini.md)")
 
         from google import genai
         from google.genai import types

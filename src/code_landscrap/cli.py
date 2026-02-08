@@ -9,7 +9,12 @@ from typing import Any
 
 import typer
 
-from code_landscrap.generator import GeminiGenerator, local_fallback_generate, parse_output
+from code_landscrap.generator import (
+    GeminiGenerator,
+    local_fallback_generate,
+    parse_output,
+    resolve_gemini_api_key,
+)
 from code_landscrap.miner import extract_deleted_fragments
 from code_landscrap.models import ArtifactRecord, Fragment
 from code_landscrap.prompting import build_system_prompt, build_user_prompt
@@ -331,16 +336,10 @@ def render(
 def doctor(
     db_path: Path = typer.Option(DEFAULT_DB_PATH, "--db", help="SQLite database path"),
 ) -> None:
-    #api_key = os.getenv("GEMINI_API_KEY")
-    key_file = ".api_keys/Gemini.md"
-    path = Path(key_file)
-    if path.exists():
-        api_key = path.read_text(encoding="utf-8").strip()
-    else:
-        raise FileNotFoundError(key_file)
+    api_key = resolve_gemini_api_key()
     has_db = db_path.exists()
     typer.echo(f"DB exists: {has_db} ({db_path})")
-    # typer.echo(f"GEMINI_API_KEY set: {bool(api_key)}")
+    typer.echo(f"GEMINI_API_KEY set: {bool(api_key)}")
 
 
 if __name__ == "__main__":

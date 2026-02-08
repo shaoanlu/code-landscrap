@@ -15,6 +15,11 @@ dependencies = [
   "google-genai>=0.5.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+]
+
 [project.scripts]
 code-landscrap = "code_landscrap.cli:app"
 
@@ -26,3 +31,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 code_landscrap = ["templates/*.html", "templates/*.css", "templates/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -ra"

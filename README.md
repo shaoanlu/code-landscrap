@@ -28,6 +28,8 @@ Set `GEMINI_API_KEY` to enable external LLM generation.
 export GEMINI_API_KEY=your_api_key_here
 ```
 
+If `GEMINI_API_KEY` is not set, `code-landscrap` falls back to `.api_keys/Gemini.md`.
+
 If the key is missing or Gemini is unavailable, run with `--local-only` to use local permutation mode.
 
 ## CLI
