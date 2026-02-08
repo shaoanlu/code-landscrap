@@ -1,3 +1,5 @@
+"""Repository source resolution helpers for local paths and remote git URLs."""
+
 from __future__ import annotations
 
 import hashlib
@@ -7,6 +9,7 @@ from urllib.parse import urlparse
 
 
 def looks_like_git_url(source: str) -> bool:
+    """Return ``True`` when ``source`` matches common git URL prefixes."""
     return (
         source.startswith("https://")
         or source.startswith("http://")
@@ -16,6 +19,17 @@ def looks_like_git_url(source: str) -> bool:
 
 
 def resolve_repo_source(source: str, cache_dir: Path, update_remote: bool = True) -> tuple[Path, str]:
+    """Resolve a source string to a local git repository path.
+
+    Behavior:
+    - Existing local git repos are used directly.
+    - Remote URLs are cloned into ``cache_dir`` when absent.
+    - Cached remotes may be fetched/pulled when ``update_remote`` is enabled.
+
+    Returns:
+        A tuple of `(resolved_path, mode)` where mode is one of
+        ``local``, ``cloned``, ``updated``, or ``cached``.
+    """
     candidate = Path(source).expanduser()
     if candidate.exists():
         if not candidate.is_dir():
@@ -51,6 +65,7 @@ def resolve_repo_source(source: str, cache_dir: Path, update_remote: bool = True
 
 
 def build_cache_repo_name(source: str) -> str:
+    """Build a stable cache directory name from URL slug and source hash."""
     parsed = urlparse(source if "://" in source else f"ssh://{source.replace(':', '/', 1)}")
     base = Path(parsed.path).name
     stem = base[:-4] if base.endswith(".git") else base
@@ -60,6 +75,7 @@ def build_cache_repo_name(source: str) -> str:
 
 
 def run_cmd(cmd: list[str]) -> str:
+    """Run a command and return stdout, raising on failure."""
     proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         stderr = proc.stderr.strip()

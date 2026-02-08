@@ -1,3 +1,5 @@
+"""Utilities for calling the model backend and normalizing generated output."""
+
 from __future__ import annotations
 
 import json
@@ -15,6 +17,18 @@ DEFAULT_GEMINI_KEY_FILE = Path(".api_keys/Gemini.md")
 
 
 def resolve_gemini_api_key(key_file: Path = DEFAULT_GEMINI_KEY_FILE) -> str | None:
+    """Resolve the Gemini API key from environment or fallback file.
+
+    Resolution order:
+    1. ``GEMINI_API_KEY`` environment variable.
+    2. ``key_file`` plaintext contents.
+
+    Args:
+        key_file: Optional fallback file containing only the API key.
+
+    Returns:
+        The non-empty API key when found, otherwise ``None``.
+    """
     api_key = (os.getenv("GEMINI_API_KEY") or "").strip()
     if api_key:
         return api_key
@@ -28,10 +42,26 @@ def resolve_gemini_api_key(key_file: Path = DEFAULT_GEMINI_KEY_FILE) -> str | No
 
 
 class GeminiGenerator:
+    """Thin adapter around Google GenAI content generation."""
+
     def __init__(self, model_name: str):
+        """Create a generator bound to a model name."""
         self.model_name = model_name
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
+        """Generate JSON-formatted artifact content from prompts.
+
+        Args:
+            system_prompt: System instruction text that defines behavior.
+            user_prompt: Prompt payload containing source fragments and rules.
+
+        Returns:
+            Raw text response from Gemini.
+
+        Raises:
+            ValueError: If either prompt is blank.
+            RuntimeError: If credentials are missing or response text is empty.
+        """
         if not isinstance(system_prompt, str) or not system_prompt.strip():
             raise ValueError("System prompt must be a non-empty string.")
         if not isinstance(user_prompt, str) or not user_prompt.strip():
@@ -63,6 +93,7 @@ class GeminiGenerator:
 
 
 def _strip_json_fence(text: str) -> str:
+    """Remove a surrounding Markdown JSON code fence when present."""
     fenced = re.match(r"^```(?:json)?\s*(.*?)\s*```$", text, re.DOTALL)
     if fenced:
         return fenced.group(1).strip()
@@ -70,6 +101,20 @@ def _strip_json_fence(text: str) -> str:
 
 
 def parse_output(raw: str) -> ArtifactOutput:
+    """Parse model output into an ``ArtifactOutput`` value.
+
+    This parser tolerates fenced JSON and can recover from plain-text output by
+    synthesizing a minimal fallback payload.
+
+    Args:
+        raw: Raw model response text.
+
+    Returns:
+        Parsed and schema-validated artifact output.
+
+    Raises:
+        RuntimeError: If parsed data cannot satisfy the schema.
+    """
     candidate = _strip_json_fence(raw)
     data: dict[str, Any]
     try:
@@ -95,6 +140,18 @@ def local_fallback_generate(
     entropy: float,
     seed: int,
 ) -> tuple[str, ArtifactOutput]:
+    """Produce an artifact deterministically without external model calls.
+
+    Args:
+        fragments: Candidate fragments selected for generation.
+        entropy: Generation chaos level in ``[0, 1]``.
+        seed: Seed used for deterministic shuffling.
+
+    Returns:
+        A tuple of:
+        1. Serialized JSON text matching the output contract.
+        2. Parsed ``ArtifactOutput`` model.
+    """
     rng = random.Random(seed)
     pool = [fragment["content"].strip() for fragment in fragments if fragment["content"].strip()]
     rng.shuffle(pool)

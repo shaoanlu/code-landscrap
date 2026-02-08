@@ -1,3 +1,5 @@
+"""Git-history mining utilities for extracting deleted code fragments."""
+
 from __future__ import annotations
 
 import re
@@ -44,6 +46,11 @@ HUNK_RE = re.compile(r"@@ -(\d+)(?:,(\d+))? \+\d+(?:,\d+)? @@")
 
 
 def _run_git(repo_path: Path, args: list[str]) -> str:
+    """Run a git command in ``repo_path`` and return stdout.
+
+    Raises:
+        RuntimeError: If git exits with a non-zero status.
+    """
     cmd = ["git", "-C", str(repo_path), *args]
     proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
     if proc.returncode != 0:
@@ -52,11 +59,13 @@ def _run_git(repo_path: Path, args: list[str]) -> str:
 
 
 def _infer_language(file_path: str) -> str:
+    """Infer language from file extension with a text fallback."""
     suffix = Path(file_path).suffix.lower()
     return LANGUAGE_BY_EXT.get(suffix, "text")
 
 
 def _is_interesting(content: str) -> bool:
+    """Heuristically filter low-signal deleted lines."""
     text = content.strip()
     if not text:
         return False
@@ -72,6 +81,7 @@ def _is_interesting(content: str) -> bool:
 
 
 def list_commits(repo_path: Path, max_commits: int | None = None) -> list[tuple[str, str, datetime]]:
+    """List non-merge commits with author and timestamp metadata."""
     args = ["log", "--pretty=format:%H%x1f%an%x1f%aI", "--no-merges"]
     if max_commits:
         args.extend(["-n", str(max_commits)])
@@ -91,6 +101,17 @@ def extract_deleted_fragments(
     max_fragments_per_commit: int = 80,
     progress_callback: Callable[[int, int, int], None] | None = None,
 ) -> list[Fragment]:
+    """Extract deleted lines from commit diffs as structured fragments.
+
+    Args:
+        repo_path: Local repository path to analyze.
+        max_commits: Optional cap on traversed commits.
+        max_fragments_per_commit: Per-commit extraction cap for runtime control.
+        progress_callback: Optional callback receiving `(done, total, extracted)`.
+
+    Returns:
+        Ordered list of extracted fragment models.
+    """
     repo_path = repo_path.resolve()
     repo_name = repo_path.name
     commits = list_commits(repo_path, max_commits=max_commits)

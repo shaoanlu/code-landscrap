@@ -1,3 +1,5 @@
+"""SQLite persistence layer for mined fragments and generated artifacts."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -50,20 +52,33 @@ CREATE TABLE IF NOT EXISTS artifact_fragments (
 
 
 class Store:
+    """Encapsulate database setup and CRUD operations for project records."""
+
     def __init__(self, db_path: Path):
+        """Initialize a store bound to a SQLite database file path."""
         self.db_path = Path(db_path)
 
     def _connect(self) -> sqlite3.Connection:
+        """Open a SQLite connection configured with dictionary-like rows."""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
 
     def init_db(self) -> None:
+        """Create required tables when they do not already exist."""
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as conn:
             conn.executescript(SCHEMA_SQL)
 
     def insert_fragments(self, fragments: Iterable[Fragment]) -> int:
+        """Insert mined fragments, ignoring duplicates by uniqueness constraint.
+
+        Args:
+            fragments: Fragment models to persist.
+
+        Returns:
+            Number of newly inserted rows.
+        """
         payload = [
             (
                 f.repo_path,
@@ -95,6 +110,15 @@ class Store:
             return conn.total_changes - before
 
     def fetch_candidate_fragments(self, repo_name: str | None = None, limit: int = 3000) -> list[dict]:
+        """Fetch a random candidate pool for generation.
+
+        Args:
+            repo_name: Optional repository filter.
+            limit: Maximum number of fragments to return.
+
+        Returns:
+            List of fragment records as dictionaries.
+        """
         query = """
             SELECT id, repo_path, repo_name, commit_hash, commit_author, commit_timestamp,
                    file_path, language, line_no, content
@@ -112,6 +136,7 @@ class Store:
             return [dict(r) for r in rows]
 
     def save_artifact(self, record: ArtifactRecord, fragment_ids: list[int]) -> None:
+        """Persist one artifact and its fragment lineage links."""
         with self._connect() as conn:
             conn.execute(
                 """
@@ -144,11 +169,13 @@ class Store:
             )
 
     def get_artifact(self, artifact_id: str) -> dict | None:
+        """Retrieve a single artifact record by identifier."""
         with self._connect() as conn:
             row = conn.execute("SELECT * FROM artifacts WHERE artifact_id = ?", (artifact_id,)).fetchone()
             return dict(row) if row else None
 
     def get_artifact_fragments(self, artifact_id: str) -> list[dict]:
+        """Return fragment records linked to an artifact, in insertion order."""
         with self._connect() as conn:
             rows = conn.execute(
                 """

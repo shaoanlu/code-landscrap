@@ -1,16 +1,25 @@
 # code-landscrap
 
-`code-landscrap` turns discarded git history into software-art artifacts.
+Turn deleted Git history into traceable software-art artifacts.
 
-> Dead code is not dead; it is latent cultural memory.
+`code-landscrap` retrieves removed or overwritten lines from a repository, recomposes them into a new code piece, and renders a package you can read, share, or archive.
 
-The workflow:
-1. Mine deleted/overwritten lines from commit diffs.
-2. Curate a random fragment bundle with a controllable entropy dial.
-3. Ask Gemini to permute/recompose fragments into a meaningful code piece.
-4. Render a traceable artifact package (`artifact.md`, `artifact.json`, `artifact.html`).
+## What you get
 
-## Install
+Each run produces:
+
+- `artifact.md`: readable narrative + source fragments
+- `artifact.json`: structured payload for tooling
+- `artifact.html`: styled presentation page
+
+## Installation
+
+Requirements:
+
+- Python `>=3.10`
+- Git
+
+Install in a virtual environment:
 
 ```bash
 # python -m venv .venv
@@ -20,83 +29,85 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-## Environment
+By default, generation uses Gemini and requires a free-tier+ API.
 
-Set `GEMINI_API_KEY` to enable external LLM generation.
+Set your key:
 
 ```bash
 export GEMINI_API_KEY=your_api_key_here
 ```
 
-If `GEMINI_API_KEY` is not set, `code-landscrap` falls back to `.api_keys/Gemini.md`.
+Fallback key file is supported at `.api_keys/Gemini.md`.
 
-If the key is missing or Gemini is unavailable, run with `--local-only` to use local permutation mode.
+## Quick Start
 
-## CLI
-
-Initialize storage:
+Generate one artifact from a public GitHub repository (no database, local generation):
 
 ```bash
-code-landscrap init-db
+code-landscrap run https://github.com/owner/repo.git --no-db
 ```
 
-One-stop run (ingest -> generate -> render, with progress output):
+Generate from a local repository with persisted history/artifacts:
 
 ```bash
 code-landscrap run /path/to/repo --max-commits 300 --fragment-count 24 --entropy 0.62
 ```
 
-One-stop run without persistent SQLite:
+Output is written under `artifacts/<artifact_id>/`.
+
+
+## CLI Commands
+
+Initialize SQLite storage:
 
 ```bash
-code-landscrap run /path/to/repo --no-db --local-only
+code-landscrap init-db
 ```
 
-Ingest deleted code from a repo:
+Ingest deleted code fragments only:
 
 ```bash
 code-landscrap ingest /path/to/repo --max-commits 300
 ```
 
-Ingest directly from a public GitHub repo URL:
+Ingest from a remote Git URL:
 
 ```bash
 code-landscrap ingest https://github.com/owner/repo.git --max-commits 300
-Using repo: <path/xxx/yyy/zzz>/code-landscrap/.code_landscrap/repos/<repo_name> (cloned)
-Ingest complete. repo=<repo_name> extracted=211 inserted=211 db=.code_landscrap/landscrap.db
 ```
 
-Remote repos are cloned into `.code_landscrap/repos` and reused. Use `--no-remote-update` to skip fetch/pull on cached repos.
-
-Private repos require normal git auth (SSH key or HTTPS token), same as `git clone`.
-
-Generate one artifact:
+Generate one artifact from ingested fragments:
 
 ```bash
 code-landscrap generate --repo-name <repo-name> --fragment-count 20 --entropy 0.62
 ```
 
-Force local generation:
+Run full pipeline in one command (`ingest -> generate -> render`):
 
 ```bash
-code-landscrap generate --local-only
+code-landscrap run /path/to/repo
 ```
 
-Re-render a saved artifact:
+Re-render an existing artifact from DB metadata:
 
 ```bash
 code-landscrap render <artifact_id>
 ```
 
-Health check:
+Check local setup:
 
 ```bash
 code-landscrap doctor
 ```
 
-## Output Structure
+## Remote Repository Caching
 
-Generated artifacts are saved in:
+- Remote repos are cloned into `.code_landscrap/repos`.
+- Cached repos are reused in later runs.
+- Use `--no-remote-update` to skip fetch/pull on cached repos.
+- Private repos use normal `git clone` auth (SSH keys or HTTPS tokens).
+
+## Output Layout
 
 ```text
 artifacts/<artifact_id>/
@@ -105,10 +116,8 @@ artifacts/<artifact_id>/
   artifact.html
 ```
 
-The database defaults to:
+Default database path:
 
 ```text
 .code_landscrap/landscrap.db
 ```
-
-`run --no-db` skips this file and keeps data in memory for that run.

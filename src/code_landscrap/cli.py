@@ -1,3 +1,5 @@
+"""Typer-based CLI for mining, generating, and rendering code artifacts."""
+
 from __future__ import annotations
 
 import random
@@ -31,15 +33,18 @@ DEFAULT_OUTPUT_ROOT = Path("artifacts")
 
 
 def _echo_step(step: int, total: int, message: str) -> None:
+    """Print a normalized progress step line."""
     typer.echo(f"[{step}/{total}] {message}")
 
 
 def _echo_mining_progress(done: int, total: int, fragments: int) -> None:
+    """Print incremental mining progress from the git extractor callback."""
     percent = int((done / total) * 100) if total else 100
     typer.echo(f"    mining commits... {done}/{total} ({percent}%) fragments={fragments}")
 
 
 def _fragment_to_candidate(fragment: Fragment, row_id: int) -> dict[str, Any]:
+    """Convert a ``Fragment`` model into generator candidate payload shape."""
     return {
         "id": row_id,
         "repo_path": fragment.repo_path,
@@ -65,6 +70,11 @@ def _build_artifact_record(
     source_repo: str | None,
     progress_callback: Callable[[str], None] | None = None,
 ) -> tuple[ArtifactRecord, list[dict[str, Any]]]:
+    """Generate one artifact record and return selected fragment lineage.
+
+    The function handles selection, prompt construction, generation (Gemini or
+    local fallback), and record assembly.
+    """
     if not candidates:
         raise typer.BadParameter("No fragments found. Run ingest first.")
 
@@ -119,6 +129,7 @@ def _build_artifact_record(
 
 
 def _record_to_render_payload(record: ArtifactRecord) -> dict[str, Any]:
+    """Convert a record model to JSON-serializable renderer input."""
     return record.model_dump(mode="json")
 
 
@@ -126,6 +137,7 @@ def _record_to_render_payload(record: ArtifactRecord) -> dict[str, Any]:
 def init_db(
     db_path: Path = typer.Option(DEFAULT_DB_PATH, "--db", help="SQLite database path"),
 ) -> None:
+    """Initialize the SQLite database schema."""
     store = Store(db_path)
     store.init_db()
     typer.echo(f"DB initialized: {db_path}")
@@ -144,6 +156,7 @@ def ingest(
         False, "--no-remote-update", help="Do not fetch/pull when using cached remote repos"
     ),
 ) -> None:
+    """Mine deleted fragments from a repository and store them in SQLite."""
     _echo_step(1, 4, "Initializing storage")
     store = Store(db_path)
     store.init_db()
@@ -186,6 +199,7 @@ def generate(
     output_root: Path = typer.Option(DEFAULT_OUTPUT_ROOT, help="Artifact output directory"),
     local_only: bool = typer.Option(False, help="Skip Gemini and force local fallback"),
 ) -> None:
+    """Generate and persist one artifact from previously ingested fragments."""
     _echo_step(1, 4, "Loading fragments from storage")
     store = Store(db_path)
     store.init_db()
@@ -241,6 +255,7 @@ def run(
     local_only: bool = typer.Option(False, help="Skip Gemini and force local fallback"),
     no_db: bool = typer.Option(False, "--no-db", help="Do not persist fragments/artifacts to SQLite"),
 ) -> None:
+    """Run ingest and generate in one flow, with optional no-database mode."""
     total_steps = 6
 
     _echo_step(1, total_steps, "Resolving source repository")
@@ -322,6 +337,7 @@ def render(
     db_path: Path = typer.Option(DEFAULT_DB_PATH, "--db", help="SQLite database path"),
     output_root: Path = typer.Option(DEFAULT_OUTPUT_ROOT, help="Artifact output directory"),
 ) -> None:
+    """Render a persisted artifact to Markdown, JSON, and HTML outputs."""
     store = Store(db_path)
     artifact = store.get_artifact(artifact_id)
     if not artifact:
@@ -336,6 +352,7 @@ def render(
 def doctor(
     db_path: Path = typer.Option(DEFAULT_DB_PATH, "--db", help="SQLite database path"),
 ) -> None:
+    """Print local environment diagnostics used by the CLI."""
     api_key = resolve_gemini_api_key()
     has_db = db_path.exists()
     typer.echo(f"DB exists: {has_db} ({db_path})")

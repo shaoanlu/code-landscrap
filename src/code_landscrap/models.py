@@ -1,3 +1,5 @@
+"""Pydantic models shared across mining, generation, and persistence layers."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,6 +9,8 @@ from pydantic import BaseModel, Field
 
 
 class Fragment(BaseModel):
+    """A single deleted code line with repository lineage metadata."""
+
     repo_path: str
     repo_name: str
     commit_hash: str
@@ -19,6 +23,8 @@ class Fragment(BaseModel):
 
 
 class ArtifactOutput(BaseModel):
+    """Normalized model output payload for a generated artifact."""
+
     title: str = "Untitled Landscrap"
     language: str = "text"
     artifact_code: str
@@ -27,6 +33,8 @@ class ArtifactOutput(BaseModel):
 
 
 class ArtifactRecord(BaseModel):
+    """Fully materialized artifact record stored in the database."""
+
     artifact_id: str
     created_at: datetime
     seed: int

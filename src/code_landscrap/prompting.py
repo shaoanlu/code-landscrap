@@ -1,3 +1,5 @@
+"""Prompt construction for artifact generation."""
+
 from __future__ import annotations
 
 import json
@@ -5,6 +7,7 @@ from typing import Any
 
 
 def build_system_prompt() -> str:
+    """Return the static system prompt that defines generator behavior."""
     return ("""
 ## Core LLM Prompt
 
@@ -58,6 +61,16 @@ Treat the source code as an artifact, not a mistake.
     )
 
 def build_user_prompt(fragments: list[dict[str, Any]], entropy: float, seed: int) -> str:
+    """Build the user prompt payload from selected fragments and controls.
+
+    Args:
+        fragments: Selected fragment dictionaries with lineage metadata.
+        entropy: Dial controlling archival vs. surreal transformation.
+        seed: Random seed surfaced to the model for reproducibility.
+
+    Returns:
+        Prompt text containing fragment payload and strict JSON output contract.
+    """
     lines: list[str] = []
     for idx, fragment in enumerate(fragments, start=1):
         lines.append(

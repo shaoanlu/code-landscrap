@@ -1,3 +1,5 @@
+"""Fragment scoring and sampling utilities for generation candidate selection."""
+
 from __future__ import annotations
 
 import random
@@ -11,6 +13,7 @@ KEYWORD_RE = re.compile(
 
 
 def _score_fragment(content: str) -> float:
+    """Score a fragment for structural richness and semantic signal."""
     text = content.strip()
     if not text:
         return 0.01
@@ -41,6 +44,11 @@ def select_fragments(
     entropy: float,
     rng: random.Random,
 ) -> list[dict[str, Any]]:
+    """Select fragments using quality-biased stochastic sampling.
+
+    Lower entropy favors high-scoring fragments; higher entropy injects more
+    randomness into selection weights.
+    """
     if not candidates:
         return []
 

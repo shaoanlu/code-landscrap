@@ -1,3 +1,5 @@
+"""Render persisted artifacts into Markdown, JSON, and HTML bundles."""
+
 from __future__ import annotations
 
 import json
@@ -11,6 +13,16 @@ def render_artifact(
     fragments: list[dict[str, Any]],
     output_root: Path,
 ) -> Path:
+    """Write an artifact package to disk and return the output directory.
+
+    Args:
+        artifact: Artifact record payload from the database or runtime model.
+        fragments: Source fragment records linked to the artifact.
+        output_root: Root directory where artifact folders are created.
+
+    Returns:
+        The artifact-specific directory containing rendered files.
+    """
     artifact_id = artifact["artifact_id"]
     target_dir = output_root / artifact_id
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -35,6 +47,7 @@ def render_artifact(
 
 
 def _render_markdown(artifact: dict[str, Any], fragments: list[dict[str, Any]]) -> str:
+    """Render a human-readable Markdown representation of an artifact."""
     lines = [
         f"# {artifact['output_title']}",
         "",
@@ -78,6 +91,7 @@ def _render_markdown(artifact: dict[str, Any], fragments: list[dict[str, Any]]) 
 
 
 def _render_html(artifact: dict[str, Any], fragments: list[dict[str, Any]]) -> str:
+    """Render artifact HTML by injecting values into the frontend template."""
     meta = (
         f"artifact {_escape_html(artifact['artifact_id'])} | "
         f"model {_escape_html(artifact['model_name'])} "
@@ -102,6 +116,7 @@ def _render_html(artifact: dict[str, Any], fragments: list[dict[str, Any]]) -> s
 
 
 def _render_fragment_blocks(fragments: list[dict[str, Any]]) -> str:
+    """Build HTML blocks for fragment cards and nearby-context echoes."""
     blocks: list[str] = []
     total_fragments = len(fragments)
 
@@ -138,6 +153,7 @@ def _render_fragment_blocks(fragments: list[dict[str, Any]]) -> str:
 
 
 def _render_template(template: str, replacements: dict[str, str]) -> str:
+    """Replace ``{{TOKEN}}`` placeholders in a template string."""
     rendered = template
     for token, value in replacements.items():
         rendered = rendered.replace(f"{{{{{token}}}}}", value)
@@ -146,20 +162,24 @@ def _render_template(template: str, replacements: dict[str, str]) -> str:
 
 @lru_cache(maxsize=None)
 def _load_frontend_asset(filename: str) -> str:
+    """Load and cache static template assets from ``templates/``."""
     asset_path = Path(__file__).with_name("templates") / filename
     return asset_path.read_text(encoding="utf-8")
 
 
 def _relative_marker(index: int) -> str:
+    """Return a rotating temporal label used in fragment metadata."""
     options = ("earlier", "later", "not yet")
     return options[index % len(options)]
 
 
 def _escape_html_with_breaks(value: Any) -> str:
+    """Escape HTML-sensitive characters and preserve line breaks."""
     return _escape_html(value).replace("\n", "<br />")
 
 
 def _escape_html(value: Any) -> str:
+    """Escape a value for direct inclusion in HTML text content."""
     text = str(value)
     return (
         text.replace("&", "&amp;")
