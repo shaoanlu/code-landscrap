@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{TITLE}}</title>
+  <style>
+{{CSS}}
+  </style>
+</head>
+<body>
+  <main class="temporal-field" data-artifact-id="{{ARTIFACT_ID_ATTR}}" data-fragment-total="{{FRAGMENT_TOTAL}}">
+    <section class="stratum resistance-zone" data-resistance="0.32">
+      <p class="kicker">artifact stratum</p>
+      <h1 class="drift" style="--drift-rate:0.14;">{{TITLE}}</h1>
+      <p class="meta">{{META}}</p>
+      <div class="artifact-code-shell">
+        <button
+          class="code-copy-button"
+          type="button"
+          data-copy-target="artifact-code-block"
+          aria-label="Copy artifact code"
+          title="Copy code"
+        >⧉</button>
+        <pre class="artifact-code" id="artifact-code-block"><code>{{ARTIFACT_CODE}}</code></pre>
+      </div>
+    </section>
+
+    <section class="stratum resistance-zone" data-resistance="0.18">
+      <p class="kicker">duration reveals</p>
+      <p class="duration-gated" data-reveal-after="5">{{STATEMENT}}</p>
+      <p class="duration-gated time-note" data-reveal-after="5">{{NOTES}}</p>
+    </section>
+
+    <section class="stratum resistance-zone" data-resistance="0.1">
+      <p class="kicker">communal residue</p>
+      <h2>Fragments</h2>
+      <div class="fragment-grid">
+        {{FRAGMENT_BLOCKS}}
+      </div>
+    </section>
+
+    <section class="stratum">
+      <p class="kicker">local irreversible clocks</p>
+      <h2>Material Drift</h2>
+      <p class="clock-row">elapsed with this artifact: <code data-clock="elapsed">0m 0s</code></p>
+      <p class="clock-row">pointer contacts: <code data-clock="clicks">0</code></p>
+      <p class="clock-row">scroll intensity: <code data-clock="scroll">0</code></p>
+      <p class="clock-row">mouse travel: <code data-clock="move">0 px</code></p>
+      <p class="muted">This browser remembers by duration, clicks, scroll, and motion, not by page reload count.</p>
+    </section>
+
+    <aside class="residue-layer" aria-hidden="true"></aside>
+  </main>
+
+  <script>
+{{JS}}
+  </script>
+</body>
+</html>

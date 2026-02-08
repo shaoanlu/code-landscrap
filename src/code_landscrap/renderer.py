@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -77,79 +78,91 @@ def _render_markdown(artifact: dict[str, Any], fragments: list[dict[str, Any]]) 
 
 
 def _render_html(artifact: dict[str, Any], fragments: list[dict[str, Any]]) -> str:
-    fragment_blocks = []
-    for frag in fragments:
-        fragment_blocks.append(
+    meta = (
+        f"artifact {_escape_html(artifact['artifact_id'])} | "
+        f"model {_escape_html(artifact['model_name'])} "
+        f"({_escape_html(artifact['generation_mode'])}) | "
+        f"created {_escape_html(artifact['created_at'])}"
+    )
+
+    replacements = {
+        "TITLE": _escape_html(artifact["output_title"]),
+        "META": meta,
+        "ARTIFACT_CODE": _escape_html(artifact["output_code"]),
+        "STATEMENT": _escape_html_with_breaks(artifact["output_statement"]),
+        "NOTES": _escape_html_with_breaks(artifact["output_notes"]),
+        "FRAGMENT_BLOCKS": _render_fragment_blocks(fragments),
+        "ARTIFACT_ID_ATTR": _escape_html(artifact["artifact_id"]),
+        "FRAGMENT_TOTAL": str(len(fragments)),
+        "CSS": _load_frontend_asset("artifact.css"),
+        "JS": _load_frontend_asset("artifact.js"),
+    }
+
+    return _render_template(_load_frontend_asset("artifact.html"), replacements)
+
+
+def _render_fragment_blocks(fragments: list[dict[str, Any]]) -> str:
+    blocks: list[str] = []
+    total_fragments = len(fragments)
+
+    for idx, frag in enumerate(fragments):
+        earlier = fragments[idx - 1]["content"] if idx > 0 else frag["content"]
+        later = fragments[idx + 1]["content"] if idx + 1 < total_fragments else frag["content"]
+        marker = _relative_marker(idx)
+
+        blocks.append(
             "\n".join(
                 [
-                    "<article class='fragment'>",
-                    f"<h3>{frag['file_path']}:{frag['line_no']}</h3>",
-                    f"<p><code>{frag['commit_hash'][:12]}</code></p>",
+                    f"<article class=\"fragment drift\" data-drift=\"{0.018 + ((idx % 5) * 0.009):.3f}\" data-fragment-index=\"{idx}\">",
+                    "<header class=\"fragment-head\">",
+                    f"<h3>{_escape_html(frag['file_path'])}:{frag['line_no']}</h3>",
+                    (
+                        "<p class=\"fragment-meta\">"
+                        f"<code>{_escape_html(frag['commit_hash'][:12])}</code> "
+                        f"<span class=\"relative-marker\">{marker}</span>"
+                        "</p>"
+                    ),
+                    "</header>",
                     f"<pre><code>{_escape_html(frag['content'])}</code></pre>",
+                    "<div class=\"fragment-echo\" aria-hidden=\"true\">",
+                    "<p>earlier/later traces</p>",
+                    f"<pre><code>{_escape_html(earlier)}</code></pre>",
+                    f"<pre><code>{_escape_html(later)}</code></pre>",
+                    "</div>",
                     "</article>",
                 ]
             )
         )
 
-    return f"""<!doctype html>
-<html lang=\"en\">
-<head>
-  <meta charset=\"utf-8\" />
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-  <title>{_escape_html(artifact['output_title'])}</title>
-  <style>
-    :root {{
-      --bg-a: #f8f5ef;
-      --bg-b: #ece4d8;
-      --ink: #201911;
-      --muted: #6f665a;
-      --card: rgba(255,255,255,0.74);
-      --line: #d6c9b7;
-    }}
-    body {{
-      margin: 0;
-      font-family: Georgia, 'Times New Roman', serif;
-      color: var(--ink);
-      background: radial-gradient(circle at 10% 10%, var(--bg-a), var(--bg-b));
-      line-height: 1.5;
-    }}
-    main {{ max-width: 980px; margin: 2rem auto; padding: 0 1rem 4rem; }}
-    .card {{ background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 1rem; }}
-    h1, h2 {{ letter-spacing: 0.02em; }}
-    code, pre {{ font-family: 'Courier New', monospace; }}
-    pre {{ white-space: pre-wrap; overflow-wrap: anywhere; }}
-    .meta {{ color: var(--muted); font-size: 0.95rem; }}
-    .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.8rem; }}
-  </style>
-</head>
-<body>
-  <main>
-    <section class=\"card\">
-      <h1>{_escape_html(artifact['output_title'])}</h1>
-      <p class=\"meta\">Artifact `{_escape_html(artifact['artifact_id'])}` | Model `{_escape_html(artifact['model_name'])}` ({_escape_html(artifact['generation_mode'])})</p>
-      <pre><code>{_escape_html(artifact['output_code'])}</code></pre>
-    </section>
-    <section class=\"card\">
-      <h2>Statement</h2>
-      <p>{_escape_html(artifact['output_statement'])}</p>
-      <h2>Transform Notes</h2>
-      <p>{_escape_html(artifact['output_notes'])}</p>
-    </section>
-    <section class=\"card\">
-      <h2>Fragments</h2>
-      <div class=\"grid\">
-        {''.join(fragment_blocks)}
-      </div>
-    </section>
-  </main>
-</body>
-</html>
-"""
+    return "".join(blocks)
 
 
-def _escape_html(value: str) -> str:
+def _render_template(template: str, replacements: dict[str, str]) -> str:
+    rendered = template
+    for token, value in replacements.items():
+        rendered = rendered.replace(f"{{{{{token}}}}}", value)
+    return rendered
+
+
+@lru_cache(maxsize=None)
+def _load_frontend_asset(filename: str) -> str:
+    asset_path = Path(__file__).with_name("templates") / filename
+    return asset_path.read_text(encoding="utf-8")
+
+
+def _relative_marker(index: int) -> str:
+    options = ("earlier", "later", "not yet")
+    return options[index % len(options)]
+
+
+def _escape_html_with_breaks(value: Any) -> str:
+    return _escape_html(value).replace("\n", "<br />")
+
+
+def _escape_html(value: Any) -> str:
+    text = str(value)
     return (
-        value.replace("&", "&amp;")
+        text.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
         .replace('"', "&quot;")

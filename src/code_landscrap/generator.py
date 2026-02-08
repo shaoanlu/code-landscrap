@@ -17,6 +17,11 @@ class GeminiGenerator:
         self.model_name = model_name
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
+        if not isinstance(system_prompt, str) or not system_prompt.strip():
+            raise ValueError("System prompt must be a non-empty string.")
+        if not isinstance(user_prompt, str) or not user_prompt.strip():
+            raise ValueError("User prompt must be a non-empty string.")
+
         # api_key = os.getenv("GEMINI_API_KEY")
         key_file = ".api_keys/Gemini.md"
         path = Path(key_file)

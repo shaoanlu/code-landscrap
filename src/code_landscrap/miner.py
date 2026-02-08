@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
@@ -88,13 +89,16 @@ def extract_deleted_fragments(
     repo_path: Path,
     max_commits: int | None = None,
     max_fragments_per_commit: int = 80,
+    progress_callback: Callable[[int, int, int], None] | None = None,
 ) -> list[Fragment]:
     repo_path = repo_path.resolve()
     repo_name = repo_path.name
     commits = list_commits(repo_path, max_commits=max_commits)
+    total_commits = len(commits)
+    progress_every = max(1, total_commits // 20) if total_commits else 1
 
     all_fragments: list[Fragment] = []
-    for commit_hash, commit_author, commit_time in commits:
+    for idx, (commit_hash, commit_author, commit_time) in enumerate(commits, start=1):
         diff_text = _run_git(repo_path, ["show", "--format=", "--unified=0", "--no-color", commit_hash])
 
         current_file = ""
@@ -147,5 +151,8 @@ def extract_deleted_fragments(
                     break
             elif raw.startswith(" "):
                 current_line_no += 1
+
+        if progress_callback and (idx == 1 or idx == total_commits or idx % progress_every == 0):
+            progress_callback(idx, total_commits, len(all_fragments))
 
     return all_fragments

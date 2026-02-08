@@ -23,3 +23,6 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+code_landscrap = ["templates/*.html", "templates/*.css", "templates/*.js"]

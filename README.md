@@ -28,7 +28,7 @@ Set `GEMINI_API_KEY` to enable external LLM generation.
 export GEMINI_API_KEY=your_api_key_here
 ```
 
-If the key is missing or Gemini is unavailable, `generate` falls back to a local permutation mode.
+If the key is missing or Gemini is unavailable, run with `--local-only` to use local permutation mode.
 
 ## CLI
 
@@ -36,6 +36,18 @@ Initialize storage:
 
 ```bash
 code-landscrap init-db
+```
+
+One-stop run (ingest -> generate -> render, with progress output):
+
+```bash
+code-landscrap run /path/to/repo --max-commits 300 --fragment-count 24 --entropy 0.62
+```
+
+One-stop run without persistent SQLite:
+
+```bash
+code-landscrap run /path/to/repo --no-db --local-only
 ```
 
 Ingest deleted code from a repo:
@@ -96,3 +108,5 @@ The database defaults to:
 ```text
 .code_landscrap/landscrap.db
 ```
+
+`run --no-db` skips this file and keeps data in memory for that run.
