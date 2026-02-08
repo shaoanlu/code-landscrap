@@ -2,7 +2,9 @@
 
 Turn Git history into traceable software-art artifacts.
 
-> Dead code is not dead; it is latent cultural memory.
+> Dead code is not dead; it is latent cultural memory, <br>
+surfacing slowly through delay, erosion, and misalignment, <br>
+because time leaves deeper traces when nothing is optimized away.
 
 `code-landscrap` retrieves removed or overwritten lines from a repository, recomposes them into a new code piece, and renders a package you can read, share, or archive.
 
