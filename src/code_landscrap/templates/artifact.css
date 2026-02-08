@@ -176,21 +176,73 @@
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 0.7rem;
     }
-    .fragment {
-      position: relative;
-      border: 1px solid rgba(78, 64, 44, 0.3);
-      background: rgba(255, 255, 255, 0.45);
-      padding: 0.65rem;
-      min-height: 10rem;
-      transition:
-        opacity 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99),
-        filter 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99);
-    }
-    .fragment.is-erased {
-      opacity: 0.18;
-      filter: blur(0.8px) grayscale(0.85);
-      pointer-events: none;
-    }
+	    .fragment {
+	      --fragment-erosion: 0;
+	      position: relative;
+	      border: 1px solid rgba(78, 64, 44, 0.3);
+	      background: rgba(255, 255, 255, 0.45);
+	      padding: 0.65rem;
+	      min-height: 10rem;
+	      overflow: hidden;
+	      opacity: calc(1 - var(--fragment-erosion, 0));
+	      filter:
+	        blur(calc(var(--fragment-erosion, 0) * 1.4px))
+	        grayscale(calc(var(--fragment-erosion, 0) * 0.95));
+	      transition:
+	        opacity 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99),
+	        filter 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99);
+	    }
+	    .fragment::before {
+	      content: "";
+	      position: absolute;
+	      inset: 0;
+	      pointer-events: none;
+	      opacity: calc(0.03 + (var(--erosion, 0) * 0.09));
+	      mix-blend-mode: multiply;
+	      background-size: 220px 220px;
+	      background-image:
+	        repeating-linear-gradient(
+	          0deg,
+	          rgba(66, 53, 37, 0.06) 0,
+	          rgba(66, 53, 37, 0.06) 1px,
+	          transparent 1px,
+	          transparent 4px
+	        ),
+	        repeating-linear-gradient(
+	          90deg,
+	          rgba(66, 53, 37, 0.04) 0,
+	          rgba(66, 53, 37, 0.04) 1px,
+	          transparent 1px,
+	          transparent 6px
+	        ),
+	        radial-gradient(circle at 20% 30%, rgba(66, 53, 37, 0.08), transparent 55%),
+	        radial-gradient(circle at 72% 64%, rgba(66, 53, 37, 0.06), transparent 62%);
+	      animation: fragment-noise 920ms steps(2, end) infinite;
+	    }
+	    @keyframes fragment-noise {
+	      0% {
+	        transform: translate3d(0, 0, 0);
+	        filter: contrast(115%) brightness(105%);
+	      }
+	      22% {
+	        transform: translate3d(1px, -1px, 0);
+	      }
+	      45% {
+	        transform: translate3d(-1px, 1px, 0);
+	      }
+	      70% {
+	        transform: translate3d(2px, 0, 0);
+	      }
+	      100% {
+	        transform: translate3d(0, 0, 0);
+	        filter: contrast(120%) brightness(108%);
+	      }
+	    }
+		    .fragment.is-erased {
+		      opacity: 0;
+		      filter: blur(2px) grayscale(1);
+		      pointer-events: none;
+		    }
     .fragment-head {
       margin-bottom: 0.45rem;
     }
@@ -269,14 +321,17 @@
         max-height: 42vh;
       }
     }
-    @media (prefers-reduced-motion: reduce) {
-      .stratum,
-      .fragment,
-      .duration-gated,
-      .fragment-echo {
-        transition: none;
-      }
-      .drift {
-        transform: none;
-      }
-    }
+	    @media (prefers-reduced-motion: reduce) {
+	      .stratum,
+	      .fragment,
+	      .duration-gated,
+	      .fragment-echo {
+	        transition: none;
+	      }
+	      .fragment::before {
+	        animation: none;
+	      }
+	      .drift {
+	        transform: none;
+	      }
+	    }

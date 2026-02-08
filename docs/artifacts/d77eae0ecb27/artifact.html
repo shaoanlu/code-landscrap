@@ -113,12 +113,55 @@
       line-height: 1.45;
       font-size: 0.9rem;
     }
+    .artifact-code-shell {
+      position: relative;
+    }
     .artifact-code {
-      padding: 0.75rem;
+      padding: 2rem 0.75rem 0.75rem;
       border: 1px dashed rgba(84, 67, 46, 0.35);
       background: rgba(252, 250, 245, 0.62);
       max-height: 48vh;
       overflow: auto;
+    }
+    .code-copy-button {
+      position: absolute;
+      top: 0.4rem;
+      right: 0.4rem;
+      z-index: 1;
+      border: 1px solid rgba(86, 66, 43, 0.45);
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--ink);
+      width: 1.7rem;
+      height: 1.7rem;
+      border-radius: 0.3rem;
+      font-size: 0.92rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition:
+        background-color 180ms ease,
+        border-color 180ms ease,
+        transform 180ms ease;
+    }
+    .code-copy-button:hover,
+    .code-copy-button:focus-visible {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(86, 66, 43, 0.7);
+      transform: translateY(-1px);
+    }
+    .code-copy-button:focus-visible {
+      outline: 2px solid rgba(86, 66, 43, 0.42);
+      outline-offset: 2px;
+    }
+    .code-copy-button.is-copied {
+      background: rgba(218, 243, 214, 0.92);
+      border-color: rgba(54, 122, 63, 0.55);
+    }
+    .code-copy-button.is-failed {
+      background: rgba(251, 223, 216, 0.95);
+      border-color: rgba(145, 51, 35, 0.55);
     }
     .duration-gated {
       opacity: 1;
@@ -140,21 +183,73 @@
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 0.7rem;
     }
-    .fragment {
-      position: relative;
-      border: 1px solid rgba(78, 64, 44, 0.3);
-      background: rgba(255, 255, 255, 0.45);
-      padding: 0.65rem;
-      min-height: 10rem;
-      transition:
-        opacity 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99),
-        filter 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99);
-    }
-    .fragment.is-erased {
-      opacity: 0.18;
-      filter: blur(0.8px) grayscale(0.85);
-      pointer-events: none;
-    }
+	    .fragment {
+	      --fragment-erosion: 0;
+	      position: relative;
+	      border: 1px solid rgba(78, 64, 44, 0.3);
+	      background: rgba(255, 255, 255, 0.45);
+	      padding: 0.65rem;
+	      min-height: 10rem;
+	      overflow: hidden;
+	      opacity: calc(1 - var(--fragment-erosion, 0));
+	      filter:
+	        blur(calc(var(--fragment-erosion, 0) * 1.4px))
+	        grayscale(calc(var(--fragment-erosion, 0) * 0.95));
+	      transition:
+	        opacity 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99),
+	        filter 1600ms cubic-bezier(0.16, 0.06, 0.09, 0.99);
+	    }
+	    .fragment::before {
+	      content: "";
+	      position: absolute;
+	      inset: 0;
+	      pointer-events: none;
+	      opacity: calc(0.03 + (var(--erosion, 0) * 0.09));
+	      mix-blend-mode: multiply;
+	      background-size: 220px 220px;
+	      background-image:
+	        repeating-linear-gradient(
+	          0deg,
+	          rgba(66, 53, 37, 0.06) 0,
+	          rgba(66, 53, 37, 0.06) 1px,
+	          transparent 1px,
+	          transparent 4px
+	        ),
+	        repeating-linear-gradient(
+	          90deg,
+	          rgba(66, 53, 37, 0.04) 0,
+	          rgba(66, 53, 37, 0.04) 1px,
+	          transparent 1px,
+	          transparent 6px
+	        ),
+	        radial-gradient(circle at 20% 30%, rgba(66, 53, 37, 0.08), transparent 55%),
+	        radial-gradient(circle at 72% 64%, rgba(66, 53, 37, 0.06), transparent 62%);
+	      animation: fragment-noise 920ms steps(2, end) infinite;
+	    }
+	    @keyframes fragment-noise {
+	      0% {
+	        transform: translate3d(0, 0, 0);
+	        filter: contrast(115%) brightness(105%);
+	      }
+	      22% {
+	        transform: translate3d(1px, -1px, 0);
+	      }
+	      45% {
+	        transform: translate3d(-1px, 1px, 0);
+	      }
+	      70% {
+	        transform: translate3d(2px, 0, 0);
+	      }
+	      100% {
+	        transform: translate3d(0, 0, 0);
+	        filter: contrast(120%) brightness(108%);
+	      }
+	    }
+		    .fragment.is-erased {
+		      opacity: 0;
+		      filter: blur(2px) grayscale(1);
+		      pointer-events: none;
+		    }
     .fragment-head {
       margin-bottom: 0.45rem;
     }
@@ -233,17 +328,20 @@
         max-height: 42vh;
       }
     }
-    @media (prefers-reduced-motion: reduce) {
-      .stratum,
-      .fragment,
-      .duration-gated,
-      .fragment-echo {
-        transition: none;
-      }
-      .drift {
-        transform: none;
-      }
-    }
+	    @media (prefers-reduced-motion: reduce) {
+	      .stratum,
+	      .fragment,
+	      .duration-gated,
+	      .fragment-echo {
+	        transition: none;
+	      }
+	      .fragment::before {
+	        animation: none;
+	      }
+	      .drift {
+	        transform: none;
+	      }
+	    }
 
   </style>
 </head>
@@ -253,7 +351,15 @@
       <p class="kicker">artifact stratum</p>
       <h1 class="drift" style="--drift-rate:0.14;">The Actor-Sharer-Learner Ritual</h1>
       <p class="meta">artifact d77eae0ecb27 | model gemini-3-flash-preview (gemini) | created 2026-02-08T09:37:50.519877+00:00</p>
-      <pre class="artifact-code"><code>import torch
+      <div class="artifact-code-shell">
+        <button
+          class="code-copy-button"
+          type="button"
+          data-copy-target="artifact-code-block"
+          aria-label="Copy artifact code"
+          title="Copy code"
+        >⧉</button>
+        <pre class="artifact-code" id="artifact-code-block"><code>import torch
 
 class ReinforcementGhost:
     def __init__(self):
@@ -287,6 +393,7 @@ def cycle_of_becoming():
     print(f&quot;Initiating {ghost.protocol} on {environment} using {acceleration}&quot;)
     ghost.invoke_archival_state(&quot;SAC-Continuous&quot;, &quot;scratch&quot;)
     return ghost.achieve_entropy()</code></pre>
+      </div>
     </section>
 
     <section class="stratum resistance-zone" data-resistance="0.18">
@@ -527,114 +634,144 @@ def cycle_of_becoming():
       <p class="kicker">local irreversible clocks</p>
       <h2>Material Drift</h2>
       <p class="clock-row">elapsed with this artifact: <code data-clock="elapsed">0m 0s</code></p>
+      <p class="clock-row">resistance now: <code data-clock="relief">0%</code></p>
       <p class="clock-row">pointer contacts: <code data-clock="clicks">0</code></p>
       <p class="clock-row">scroll intensity: <code data-clock="scroll">0</code></p>
       <p class="clock-row">mouse travel: <code data-clock="move">0 px</code></p>
-      <p class="muted">This browser remembers by duration, clicks, scroll, and motion, not by page reload count.</p>
+      <p class="muted">Time erodes fragments; clicks, scroll, and motion slow the erosion. The browser remembers gestures, not reloads.</p>
     </section>
 
     <aside class="residue-layer" aria-hidden="true"></aside>
   </main>
 
   <script>
-    (() => {
-      const AGGRESSION = {
-        elapsed_ms_to_max: 3 * 60 * 1000,
-        clicks_to_max: 120,
-        scroll_to_max: 9000,
-        move_px_to_max: 120000,
-      };
+(() => {
+  const SCHEMA_VERSION = 3;
 
-      const field = document.querySelector(".temporal-field");
-      if (!field) {
-        return;
+  const EROSION = {
+    // Controls how quickly time alone reaches max erosion (lower = faster).
+    // Previously 55s; make it ~3x faster.
+    elapsed_ms_to_max: Math.round((55 * 100)),
+    relief_half_life_ms: 6500,
+    relief_units_to_full: 100,
+    relief_units_cap: 180,
+    click_relief_units: 16,
+    scroll_relief_per_120px: 2.2,
+    move_relief_per_px: 1 / 85,
+  };
+
+  const field = document.querySelector(".temporal-field");
+  if (!field) {
+    return;
+  }
+  document.body.classList.add("js-temporal");
+
+  const artifactId = field.dataset.artifactId || "artifact";
+  const storageKey = `landscrap.temporal.${artifactId}`;
+  const nowMs = Date.now();
+  const memoryStore = {};
+  const storage = {
+    getItem(key) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch (_err) {
+        return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
       }
-      document.body.classList.add("js-temporal");
-
-      const artifactId = field.dataset.artifactId || "artifact";
-      const fragmentTotal = Number(field.dataset.fragmentTotal || "0");
-      const storageKey = `landscrap.temporal.${artifactId}`;
-      const nowMs = Date.now();
-      const memoryStore = {};
-      const storage = {
-        getItem(key) {
-          try {
-            return window.localStorage.getItem(key);
-          } catch (_err) {
-            return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
-          }
-        },
-        setItem(key, value) {
-          try {
-            window.localStorage.setItem(key, value);
-          } catch (_err) {
-            memoryStore[key] = value;
-          }
-        },
-      };
-
-      const raw = storage.getItem(storageKey);
-      let parsed = {};
-      if (raw) {
-        try {
-          parsed = JSON.parse(raw);
-        } catch (_err) {
-          parsed = {};
-        }
+    },
+    setItem(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch (_err) {
+        memoryStore[key] = value;
       }
-
-      const state = {
-        total_elapsed_ms: Number(parsed.total_elapsed_ms) || 0,
-        click_count: Number(parsed.click_count) || 0,
-        scroll_intensity: Number(parsed.scroll_intensity) || 0,
-        move_distance_px: Number(parsed.move_distance_px) || 0,
-        hidden_indices: Array.isArray(parsed.hidden_indices)
-          ? parsed.hidden_indices.filter((val) => Number.isInteger(val))
-          : [],
-        pointer_trace: Array.isArray(parsed.pointer_trace) ? parsed.pointer_trace.slice(-24) : [],
-        last_seen_ms: Number(parsed.last_seen_ms) || nowMs,
-      };
-
-      if (state.last_seen_ms > 0 && nowMs > state.last_seen_ms) {
-        const gap = Math.min(nowMs - state.last_seen_ms, 6 * 60 * 60 * 1000);
-        state.total_elapsed_ms += gap;
+    },
+    removeItem(key) {
+      try {
+        window.localStorage.removeItem(key);
+      } catch (_err) {
+        // ignore
       }
-
-      const root = document.documentElement;
-      const residueLayer = document.querySelector(".residue-layer");
-      const elapsedClock = document.querySelector('[data-clock="elapsed"]');
-      const clickClock = document.querySelector('[data-clock="clicks"]');
-      const scrollClock = document.querySelector('[data-clock="scroll"]');
-      const moveClock = document.querySelector('[data-clock="move"]');
-      const fragments = Array.from(document.querySelectorAll(".fragment"));
-      const durationTargets = Array.from(document.querySelectorAll(".duration-gated"));
-      const zones = Array.from(document.querySelectorAll(".resistance-zone"));
-      let sessionStartPerf = performance.now();
-      let persistTimer = 0;
-      let lastPointer = null;
-      let lastMoveCapture = 0;
-
-      function seededIndex(step, length) {
-        let hash = 2166136261;
-        const seedText = `${artifactId}:${step}`;
-        for (let i = 0; i < seedText.length; i += 1) {
-          hash ^= seedText.charCodeAt(i);
-          hash = Math.imul(hash, 16777619);
-        }
-        return Math.abs(hash) % Math.max(1, length);
+      if (Object.prototype.hasOwnProperty.call(memoryStore, key)) {
+        delete memoryStore[key];
       }
+    },
+  };
 
-      function totalElapsedNow() {
-        return state.total_elapsed_ms + Math.max(0, performance.now() - sessionStartPerf);
-      }
+  const raw = storage.getItem(storageKey);
+  let parsed = {};
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_err) {
+      parsed = {};
+    }
+  }
+  if (!parsed || parsed.schema_version !== SCHEMA_VERSION) {
+    parsed = {};
+  }
 
-      function erosionScore(elapsedMs, clickCount) {
-        const fromElapsed = elapsedMs / AGGRESSION.elapsed_ms_to_max;
-        const fromClicks = clickCount / AGGRESSION.clicks_to_max;
-        const fromScroll = state.scroll_intensity / AGGRESSION.scroll_to_max;
-        const fromMoves = state.move_distance_px / AGGRESSION.move_px_to_max;
-        return Math.max(0, Math.min(1, fromElapsed + fromClicks + fromScroll + fromMoves));
-      }
+  const state = {
+    total_elapsed_ms: Number(parsed.total_elapsed_ms) || 0,
+    click_count: Number(parsed.click_count) || 0,
+    scroll_intensity: Number(parsed.scroll_intensity) || 0,
+    move_distance_px: Number(parsed.move_distance_px) || 0,
+    relief_units: Number(parsed.relief_units) || 0,
+    relief_updated_ms: Number(parsed.relief_updated_ms) || nowMs,
+    pointer_trace: Array.isArray(parsed.pointer_trace) ? parsed.pointer_trace.slice(-24) : [],
+    last_seen_ms: Number(parsed.last_seen_ms) || nowMs,
+  };
+
+  const root = document.documentElement;
+  const residueLayer = document.querySelector(".residue-layer");
+  const elapsedClock = document.querySelector('[data-clock="elapsed"]');
+  const reliefClock = document.querySelector('[data-clock="relief"]');
+  const clickClock = document.querySelector('[data-clock="clicks"]');
+  const scrollClock = document.querySelector('[data-clock="scroll"]');
+  const moveClock = document.querySelector('[data-clock="move"]');
+  const fragments = Array.from(document.querySelectorAll(".fragment"));
+  const durationTargets = Array.from(document.querySelectorAll(".duration-gated"));
+  const zones = Array.from(document.querySelectorAll(".resistance-zone"));
+  const copyButton = document.querySelector(".code-copy-button");
+  const artifactCodeNode = document.querySelector("#artifact-code-block code");
+  let sessionStartPerf = performance.now();
+  let persistTimer = 0;
+  let lastPointer = null;
+  let lastMoveCapture = 0;
+
+  function totalElapsedNow() {
+    return state.total_elapsed_ms + Math.max(0, performance.now() - sessionStartPerf);
+  }
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  function decayRelief(now) {
+    const dt = Math.max(0, now - state.relief_updated_ms);
+    if (dt <= 0) {
+      return;
+    }
+    const halfLife = Math.max(250, EROSION.relief_half_life_ms);
+    const decayFactor = Math.pow(0.5, dt / halfLife);
+    state.relief_units *= decayFactor;
+    state.relief_updated_ms = now;
+  }
+
+  function addRelief(units) {
+    if (!Number.isFinite(units) || units <= 0) {
+      return;
+    }
+    const now = Date.now();
+    decayRelief(now);
+    state.relief_units = Math.min(EROSION.relief_units_cap, state.relief_units + units);
+  }
+
+  function erosionScore(elapsedMs) {
+    decayRelief(Date.now());
+    const timePressure = clamp01(elapsedMs / EROSION.elapsed_ms_to_max);
+    const relief = clamp01(state.relief_units / EROSION.relief_units_to_full);
+    return clamp01(timePressure - relief);
+  }
 
       function formatElapsed(ms) {
         const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -650,45 +787,62 @@ def cycle_of_becoming():
         return `${Math.floor(px)} px`;
       }
 
-      function schedulePersist() {
-        if (persistTimer) {
-          return;
-        }
-        persistTimer = window.setTimeout(() => {
-          persistTimer = 0;
-          persistState();
-        }, 300);
-      }
+  function schedulePersist() {
+    if (persistTimer) {
+      return;
+    }
+    persistTimer = window.setTimeout(() => {
+      persistTimer = 0;
+      persistState();
+    }, 300);
+  }
 
-      function persistState() {
-        const payload = {
-          total_elapsed_ms: Math.round(totalElapsedNow()),
-          click_count: state.click_count,
-          scroll_intensity: Math.round(state.scroll_intensity),
-          move_distance_px: Math.round(state.move_distance_px),
-          hidden_indices: state.hidden_indices,
-          pointer_trace: state.pointer_trace.slice(-24),
-          last_seen_ms: Date.now(),
-        };
-        storage.setItem(storageKey, JSON.stringify(payload));
-      }
+  function persistState() {
+    const payload = {
+      schema_version: SCHEMA_VERSION,
+      total_elapsed_ms: Math.round(totalElapsedNow()),
+      click_count: state.click_count,
+      scroll_intensity: Math.round(state.scroll_intensity),
+      move_distance_px: Math.round(state.move_distance_px),
+      relief_units: state.relief_units,
+      relief_updated_ms: state.relief_updated_ms,
+      pointer_trace: state.pointer_trace.slice(-24),
+      last_seen_ms: Date.now(),
+    };
+    storage.setItem(storageKey, JSON.stringify(payload));
+  }
 
-      function applyFragmentDecay(score) {
-        const targetHidden = Math.floor(score * fragmentTotal * 0.25);
-        let step = state.hidden_indices.length;
-        while (state.hidden_indices.length < targetHidden && state.hidden_indices.length < fragmentTotal) {
-          const candidate = seededIndex(step * 37 + state.click_count, fragmentTotal);
-          if (!state.hidden_indices.includes(candidate)) {
-            state.hidden_indices.push(candidate);
-          }
-          step += 1;
-        }
-        fragments.forEach((frag) => {
-          const idx = Number(frag.getAttribute("data-fragment-index"));
-          const shouldHide = state.hidden_indices.includes(idx);
-          frag.classList.toggle("is-erased", shouldHide);
-        });
-      }
+  function fragmentSeed(idx) {
+    let hash = 2166136261;
+    const seedText = `${artifactId}:frag:${idx}`;
+    for (let i = 0; i < seedText.length; i += 1) {
+      hash ^= seedText.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) / 4294967295;
+  }
+
+  const fragmentPlans = fragments.map((frag) => {
+    const idx = Number(frag.getAttribute("data-fragment-index"));
+    const seed = fragmentSeed(idx);
+    const start = seed * 0.8;
+    const span = 0.3 - (seed * 0.1);
+    return { frag, start, span };
+  });
+
+  function smoothstep(t) {
+    const x = clamp01(t);
+    return x * x * (3 - (2 * x));
+  }
+
+  function applyFragmentDecay(score) {
+    fragmentPlans.forEach(({ frag, start, span }) => {
+      const raw = span > 0 ? (score - start) / span : 1;
+      const local = smoothstep(raw);
+      frag.style.setProperty("--fragment-erosion", local.toFixed(3));
+      frag.classList.toggle("is-erased", local >= 0.999);
+    });
+  }
 
       function renderPointerTrace() {
         if (!residueLayer) {
@@ -707,11 +861,15 @@ def cycle_of_becoming():
 
       function applyAtmosphere() {
         const elapsedMs = totalElapsedNow();
-        const score = erosionScore(elapsedMs, state.click_count);
+        const score = erosionScore(elapsedMs);
+        const relief = clamp01(state.relief_units / EROSION.relief_units_to_full);
         root.style.setProperty("--erosion", score.toFixed(3));
         root.style.setProperty("--scroll-y", String(window.scrollY));
         if (elapsedClock) {
           elapsedClock.textContent = formatElapsed(elapsedMs);
+        }
+        if (reliefClock) {
+          reliefClock.textContent = `${Math.round(relief * 100)}%`;
         }
         if (clickClock) {
           clickClock.textContent = String(state.click_count);
@@ -803,10 +961,80 @@ def cycle_of_becoming():
         frag.style.setProperty("--drift-rate", driftRate.toFixed(3));
       });
 
+      async function copyText(text) {
+        if (!text) {
+          return false;
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(text);
+            return true;
+          } catch (_err) {
+            // Fall through to the textarea fallback.
+          }
+        }
+
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        textarea.style.pointerEvents = "none";
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        let copied = false;
+        try {
+          copied = document.execCommand("copy");
+        } catch (_err) {
+          copied = false;
+        }
+        document.body.removeChild(textarea);
+        return copied;
+      }
+
+      let copyFlashTimer = 0;
+      if (copyButton && artifactCodeNode) {
+        copyButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const source = artifactCodeNode.textContent || "";
+          const ok = await copyText(source);
+
+          if (copyFlashTimer) {
+            window.clearTimeout(copyFlashTimer);
+            copyFlashTimer = 0;
+          }
+
+          copyButton.classList.remove("is-copied", "is-failed");
+          if (ok) {
+            copyButton.textContent = "✓";
+            copyButton.classList.add("is-copied");
+            copyButton.setAttribute("aria-label", "Copied");
+            copyButton.setAttribute("title", "Copied");
+          } else {
+            copyButton.textContent = "!";
+            copyButton.classList.add("is-failed");
+            copyButton.setAttribute("aria-label", "Copy failed");
+            copyButton.setAttribute("title", "Copy failed");
+          }
+
+          copyFlashTimer = window.setTimeout(() => {
+            copyButton.textContent = "⧉";
+            copyButton.classList.remove("is-copied", "is-failed");
+            copyButton.setAttribute("aria-label", "Copy artifact code");
+            copyButton.setAttribute("title", "Copy code");
+          }, 1200);
+        });
+      }
+
       document.addEventListener(
         "wheel",
         (event) => {
           state.scroll_intensity += Math.abs(event.deltaY) + (Math.abs(event.deltaX) * 0.35);
+          addRelief((Math.abs(event.deltaY) + (Math.abs(event.deltaX) * 0.35)) / 120 * EROSION.scroll_relief_per_120px);
           applyScrollResistance(event);
           applyAtmosphere();
           schedulePersist();
@@ -816,6 +1044,7 @@ def cycle_of_becoming():
 
       document.addEventListener("pointerdown", (event) => {
         state.click_count += 1;
+        addRelief(EROSION.click_relief_units);
         lastPointer = { x: event.clientX, y: event.clientY };
         const width = Math.max(1, window.innerWidth);
         const height = Math.max(1, window.innerHeight);
@@ -845,13 +1074,11 @@ def cycle_of_becoming():
             const dy = event.clientY - lastPointer.y;
             const dist = Math.sqrt((dx * dx) + (dy * dy));
             state.move_distance_px += dist;
+            addRelief(dist * EROSION.move_relief_per_px);
           }
           lastPointer = { x: event.clientX, y: event.clientY };
           lastMoveCapture = nowPerf;
-          if (nowPerf % 250 < 32) {
-            applyAtmosphere();
-            schedulePersist();
-          }
+          schedulePersist();
         },
         { passive: true }
       );
