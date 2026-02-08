@@ -44,13 +44,10 @@ Fallback is to find the key file at `.api_keys/Gemini.md` containing the API key
 Generate one artifact from a public GitHub repository (no database, local generation):
 
 ```bash
-code-landscrap run https://github.com/owner/repo.git --no-db
-```
+code-landscrap run https://github.com/owner/repo --no-db
 
-Generate from a local repository with persisted history/artifacts:
-
-```bash
-code-landscrap run /path/to/repo --max-commits 300 --fragment-count 24 --entropy 0.62
+# Or alternatively, generate from a local repository with persisted history/artifacts:
+# code-landscrap run https://github.com/owner/repo --max-commits 300 --fragment-count 24 --entropy 0.62
 ```
 
 Output is written under `artifacts/<artifact_id>/`.
